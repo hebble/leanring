@@ -1,0 +1,95 @@
+PUT gather_base_test_comment_v1
+{
+  "settings": {
+    "number_of_shards": 6,
+    "number_of_replicas": 1,
+    "refresh_interval": "5s",
+    "analysis": {
+      "normalizer": {
+        "my_normalizer": {
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ],
+          "type": "custom"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "comment_id": {
+        "type": "keyword"
+      },
+      "comments_count": {
+        "type": "integer"
+      },
+      "content": {
+        "type": "text"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "data_key": {
+        "type": "keyword"
+      },
+      "data_source_type": {
+        "type": "keyword"
+      },
+      "db_time": {
+        "type": "date"
+      },
+      "dislike_count": {
+        "type": "integer"
+      },
+      "extra_info": {
+        "type": "object"
+      },
+      "hash_code": {
+        "type": "keyword"
+      },
+      "lang": {
+        "type": "keyword"
+      },
+      "likes_count": {
+        "type": "integer"
+      },
+      "platform": {
+        "type": "keyword"
+      },
+      "floor": {
+        "type": "keyword"
+      },
+      "post_id": {
+        "type": "keyword"
+      },
+      "reply_id": {
+        "type": "keyword"
+      },
+      "spi_time": {
+        "type": "date"
+      },
+      "task_id": {
+        "type": "keyword"
+      },
+      "url": {
+        "type": "keyword"
+      },
+      "user_id": {
+        "type": "keyword"
+      },
+      "user_id2": {
+        "type": "keyword"
+      },
+      "user_name": {
+        "type": "keyword"
+      },
+	  "gender": {
+        "type": "keyword"
+      },
+	  "reactions": {
+        "type": "object"
+      }
+    }
+  }
+}

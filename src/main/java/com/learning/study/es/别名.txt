@@ -1,0 +1,51 @@
+POST _aliases
+{
+  "actions": [
+    {
+      "add": {
+        "index": "xxx_v1",
+        "alias": "xxx"
+      }
+    }
+  ]
+}
+
+"index": "gather_base_test_user_v1",
+"alias": "gather_base_test_user"
+
+"index": "gather_base_test_post_v1",
+"alias": "gather_base_test_post"
+
+"index": "gather_base_test_comment_v1",
+"alias": "gather_base_test_comment"
+
+"index": "gather_base_test_file_v1",
+"alias": "gather_base_test_file"
+
+"index": "gather_base_test_follower_v1",
+"alias": "gather_base_test_follower"
+
+"index": "gather_base_test_user_similar_v1",
+"alias": "gather_base_test_user_similar"
+
+"index": "gather_base_test_post_up_v1",
+"alias": "gather_base_test_post_up"
+
+"index": "gather_base_test_post_re_v1",
+"alias": "gather_base_test_post_re"
+
+"index": "gather_base_test_download_file_info_v1",
+"alias": "gather_base_test_download_file_info"
+
+"index": "gather_base_test_message_v1",
+"alias": "gather_base_test_message"
+
+"index": "gather_base_test_task_v1",
+"alias": "gather_base_test_task"
+
+"index": "gather_base_test_file_platform_v1",
+"alias": "gather_base_test_file_platform"
+
+"index": "gather_base_test_content_file_v1",
+"alias": "gather_base_test_content_file"
+

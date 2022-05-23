@@ -1,0 +1,26 @@
+删除表
+DROP TABLE `zhongyi`.`zy_self_owned_medicine_ORIGINAL`; 
+DROP TABLE `zhongyi`.`zy_self_owned_medicine_type_ORIGINAL`; 
+
+重命名
+RENAME TABLE `zhongyi`.`zy_self_owned_medicine` TO `zhongyi`.`zy_self_owned_medicine_ORIGINAL`;
+RENAME TABLE `zhongyi`.`zy_self_owned_medicine_TEMP` TO `zhongyi`.`zy_self_owned_medicine`; 
+
+RENAME TABLE `zhongyi`.`zy_self_owned_medicine_type` TO `zhongyi`.`zy_self_owned_medicine_type_ORIGINAL`;
+RENAME TABLE `zhongyi`.`zy_self_owned_medicine_type_TEMP` TO `zhongyi`.`zy_self_owned_medicine_type`; 
+
+联合主键
+alter table `zy_third_inform_account` add constraint U_TH_INF_ID_AND_TH_ACT_ID UNIQUE key(TH_INF_ID,TH_ACT_ID);
+alter table `zy_doctor_registration` add constraint U_PB_ID_AND_PHY_ID_AND_DRT_DAY_TYPE UNIQUE key(PB_ID,PHY_ID,DRT_DAY_TYPE);
+
+alter table `zy_prescription_medicine` add constraint U_PRESCRIPTION_ID_AND_MEDICINE_ID UNIQUE key(PRESCRIPTION_ID,MEDICINE_ID);
+
+添加索引
+ALTER  TABLE  `zy_third_order_detail`  ADD  INDEX INDEX_TH_ORD_DET_REF_ID (`TH_ORD_DET_REF_ID`);
+
+
+添加字段
+ALTER TABLE `zhongyi`.`zy_user` ADD COLUMN `TEMP` INT NULL COMMENT '111' AFTER `USR_SOURCE_EMP_ID`;
+
+显示所有数据库
+SHOW DATABASES;
