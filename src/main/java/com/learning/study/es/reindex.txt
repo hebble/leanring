@@ -1,0 +1,14 @@
+POST _reindex
+{
+  "source": {
+    "remote": {
+      "host": "http://172.16.101.21:9200",
+      "socket_timeout": "30s",
+      "connect_timeout": "30s"
+    },
+    "index": "gather_base_test_message"
+  },
+  "dest": {
+    "index": "gather_base_fz_message"
+  }
+}
