@@ -1,0 +1,27 @@
+
+在/etc/systemd/syetem下
+写一个sms.service文件,如下:
+=============================================================================
+[Unit]
+Description=sms
+Documentation=https://prometheus.io/
+After=network.target
+[Service]
+Type=forking
+User=root
+ExecStart=/home/user/sms_start.sh
+Restart=on-failure
+StandardOutput=null
+[Install]
+WantedBy=multi-user.target
+=============================================================================
+sms_start.sh脚本如文件:
+将文件改为可执行
+chmod +x sms_start.sh
+
+systemctl daemon-reload  #刷新服务
+systemctl restart sms
+systemctl enable xxx #设置开机自启
+systemctl start xxx
+systemctl stop xxx
+

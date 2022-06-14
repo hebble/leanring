@@ -1,0 +1,12 @@
+[Unit]
+Description=sms
+Documentation=https://prometheus.io/
+After=network.target
+[Service]
+Type=forking
+User=root
+ExecStart=/home/user/sms_start.sh
+Restart=on-failure
+StandardOutput=null
+[Install]
+WantedBy=multi-user.target
