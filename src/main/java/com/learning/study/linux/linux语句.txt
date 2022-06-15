@@ -11,6 +11,8 @@ chown -R root /temp/
 curl "http://localhost:9102/sms-service/test/testSendSms" -H "Content-Type: application/json" -d '{"cardComName":"/dev/ttyUSB0","col":1,"row":2,"phone":"\"+6283879507189\"","message":"hello"}' -X POST
 curl http://localhost:9102/sms-service/test/testGetAllComPort
 curl -k --tlsv1 "https://117.139.166.242:60223/api_getphone" #https访问忽略证书
+curl -k --tlsv1 "https://8.215.78.132:60001/api_getphone"
+
 
 ##安转nginx
 sudo apt-get install nginx -y
