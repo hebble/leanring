@@ -1,31 +1,49 @@
-##用于显示 tcp，udp 的端口和进程等相关情况
+##-------------- 用于显示 tcp，udp 的端口和进程等相关情况 --------------
 netstat -tunlp
-#查看linux版本
+##-------------- 查看linux版本 --------------
 uname -a
 cat /proc/version
 
-##修改文件所属账号
+##-------------- 修改文件所属账号 --------------
 chown -R root /temp/
 
-##curl命令
+##-------------- curl命令 --------------
 curl "http://localhost:9102/sms-service/test/testSendSms" -H "Content-Type: application/json" -d '{"cardComName":"/dev/ttyUSB0","col":1,"row":2,"phone":"\"+6283879507189\"","message":"hello"}' -X POST
 curl http://localhost:9102/sms-service/test/testGetAllComPort
 curl -k --tlsv1 "https://117.139.166.242:60223/api_getphone" #https访问忽略证书
 curl -k --tlsv1 "https://8.215.78.132:60001/api_getphone"
 
-
-##安转nginx
+##-------------- 安转nginx --------------
 sudo apt-get install nginx -y
 
-##查看文件由大到小占用磁盘大小
+##-------------- 查看文件由大到小占用磁盘大小 --------------
 du -h --max-depth=1
 
-##安装jdk
+##-------------- 安装jdk --------------
 sudo apt-get install openjdk-8-jdk -y
 java -version
 
-##安装rz
+##-------------- 安装rz --------------
 apt install lrzsz
 
-##更新apt
+##-------------- 更新apt --------------
 sudo apt-get update
+
+##-------------- 解压文件 --------------
+tar -zcvf 压缩文件名.tar.gz 被压缩文件名
+tar -zxvf 压缩文件名.tar.gz
+
+##-------------- 启动jar --------------
+nohup java  -Xms512m -Xmx1024m -jar /home/ubuntu/yqms/srms-0.0.1-SNAPSHOT.jar --spring.profiles.active=install > /dev/null 2>&1 &
+
+pid=`ps -ef|grep gather-translate-dev.jar|grep -v grep|awk '{print $2}'`
+kill -9 $pid
+
+cd /home/ubuntu/gather-translate
+rm -rf gather-translate-dev.jar
+mv /home/ubuntu/temp/gather-translate-dev.jar /home/ubuntu/gather-translate/gather-translate-dev.jar
+
+cd /home/ubuntu/gather-translate
+nohup /usr/bin/java -jar -Duser.timezone=GMT+08 gather-translate-dev.jar --spring.profiles.active=dev > gather-translate-dev.jar.log 2>&1 &
+cd /home/ubuntu/gather-translate
+tail -f gather-translate-dev.jar.log
