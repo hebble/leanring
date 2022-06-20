@@ -30,6 +30,7 @@ public class LockLearning {
      * 4. 是否公平锁
      * synchronized为非公平锁 ReentrantLock则即可以选公平锁也可以选非公平锁，通过构造方法new ReentrantLock时传入boolean值进行选择，为空默认false非公平锁，true为公平锁。
      */
+    public void sychronized和ReenteredLock区别() {}
 
     /**
      * volatile关键字
@@ -37,6 +38,6 @@ public class LockLearning {
      * volatile能解决变量的可见性、有序性；
      * volatile不能解决变量的原子性
      */
-
+    public void volatile关键字() {}
 
 }
