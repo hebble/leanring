@@ -1,7 +1,7 @@
 package com.learning.study.object;
 
 public class LockLearning {
-    //TODO 1.synchronized(悲观锁、同步锁)
+
     /**
      * 1.synchronized(悲观锁、同步锁)
      *      synchronized被称为“重量级的锁”方式，也是“悲观锁”——效率比较低。
@@ -12,6 +12,7 @@ public class LockLearning {
      * public void lock():加同步锁。
      * public void unlock():释放同步锁。
      */
+    public void synchronized悲观锁同步锁() {}
 
     /**
      * sychronized和 ReenteredLock区别
