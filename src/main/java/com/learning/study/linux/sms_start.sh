@@ -5,3 +5,6 @@ nohup /usr/bin/java -jar -Duser.timezone=GMT+08 sms-service-dev.jar > sms-servic
 echo $! > /var/run/sms.pid
 
 
+
+
+
