@@ -47,3 +47,6 @@ cd /home/ubuntu/gather-translate
 nohup /usr/bin/java -jar -Duser.timezone=GMT+08 gather-translate-dev.jar --spring.profiles.active=dev > gather-translate-dev.jar.log 2>&1 &
 cd /home/ubuntu/gather-translate
 tail -f gather-translate-dev.jar.log
+
+##-------------------- 查看文件数 ----------------------
+ls | wc -l
