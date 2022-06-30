@@ -16,6 +16,11 @@ StandardOutput=null
 WantedBy=multi-user.target
 =============================================================================
 sms_start.sh脚本如文件:
+#!/bin/sh
+cd /home/user/sms-pool/sms-service
+nohup /usr/bin/java -jar -Duser.timezone=GMT+08 sms-service-dev.jar > sms-service-dev.jar.log 2>&1 &
+echo $! > /var/run/sms.pid
+
 将文件改为可执行
 chmod +x sms_start.sh
 
