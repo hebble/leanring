@@ -55,6 +55,30 @@ public class ZookeeperLearning {
      *          LEADING：当前 Server 即为选举出来的 leader
      *          FOLLOWING：leader 已经选举出来，当前 Server 与之同步
      *
+     * 10.zookeeper 是如何选取主 leader 的？
+     *      选举算法有两种：
+     *          一种是基于 basic paxos 实现的
+     *          另外一种是基于 fast paxos 算法实现的
+     *      系统默认的选举算法为 fast paxos。
+     *      1、Zookeeper 选主流程(basic paxos)
+     *          （1）选举线程由当前 Server 发起选举的线程担任，其主要功能是对投票结果进行统计，并选出推荐的 Server；
+     *          （2）选举线程首先向所有 Server 发起一次询问(包括自己)；
+     *          （3）选举线程收到回复后，验证是否是自己发起的询问(验证 zxid 是否一致)，然后获取对方的 id(myid)，并存储到当前询问对象列表中，最后获取对方提议的 leader 相关信息(id,zxid)，并将这些信息存储到当次选举的投票记录表中；
+     *          （4）收到所有 Server 回复以后，就计算出 zxid 最大的那个 Server，并将这个Server 相关信息设置成下一次要投票的 Server；
+     *          （5）线程将当前 zxid 最大的 Server 设置为当前 Server 要推荐的 Leader，如果此时获胜的 Server 获得 n/2 + 1 的 Server 票数，设置当前推荐的 leader 为获胜的Server，将根据获胜的 Server 相关信息设置自己的状态，否则，继续这个过程，直到 leader
+     *              被选举出来。 通过流程分析我们可以得出：要使 Leader 获得多数 Server 的支持，则Server 总数必须是奇数 2n+1，且存活的 Server 的数目不得少于 n+1. 每个 Server 启动后都会重复以上流程。在恢复模式下，如果是刚从崩溃状态恢复的或者刚启动的 server 还
+     *              会从磁盘快照中恢复数据和会话信息，zk 会记录事务日志并定期进行快照，方便在恢复时进行状态恢复。
+     *      2、Zookeeper 选主流程(fast paxos)
+     *          fast paxos 流程是在选举过程中，某 Server 首先向所有 Server 提议自己要成为leader，当其它 Server 收到提议以后，解决 epoch 和 zxid 的冲突，并接受对方的提议，然后向对方发送接受提议完成的消息，重复这个流程，最后一定能选举出 Leader。
      *
+     * 11.Zookeeper 同步流程
+     *      选完 Leader 以后，zk 就进入状态同步过程。
+     *          1、Leader 等待 server 连接；
+     *          2、Follower 连接 leader，将最大的 zxid 发送给 leader； 3、Leader 根据 follower 的 zxid 确定同步点；
+     *          4、完成同步后通知 follower 已经成为 uptodate 状态；
+     *          5、Follower 收到 uptodate 消息后，又可以重新接受 client 的请求进行服务了
+     *
+     * 12.机器中为什么会有 leader？
+     *      在分布式环境中，有些业务逻辑只需要集群中的某一台机器进行执行，其他的机器可以共享这个结果，这样可以大大减少重复计算，提高性能，于是就需要进行 leader 选举。
      */
 }
