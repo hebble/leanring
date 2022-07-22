@@ -67,6 +67,9 @@ public class MybatisLearning {
      *        （2）Mybatis直接编写原生态sql，可以严格控制sql执行性能，灵活度高，非常适合对关系数据模型要求不高的软件开发，因为这类软件需求变化频繁，一但需求变化要求迅速输出成果。但是灵活的前提是mybatis无法做到数据库无关性，如果需要实现支持多种数据库的软件，则需要自定义多套sql映射文件，工作量大。
      *        （3）Hibernate对象/关系映射能力强，数据库无关性好，对于关系模型要求高的软件，如果用hibernate开发可以节省很多代码，提高效率。
      */
+
+    https://zhuanlan.zhihu.com/p/340593296
+    https://blog.csdn.net/a745233700/article/details/114242960
 }
 
 
