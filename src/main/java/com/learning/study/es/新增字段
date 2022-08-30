@@ -1,0 +1,8 @@
+PUT mytest/_mapping
+{
+  "properties" : {
+        "d" : {
+          "type" : "keyword"
+        }
+      }
+}
