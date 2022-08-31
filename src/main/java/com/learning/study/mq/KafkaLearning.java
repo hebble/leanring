@@ -118,9 +118,9 @@ public class KafkaLearning {
              延迟时间可以通过参数 replica.lag.time.max.ms 参数配置，它指定了副本在复制消息时可被允许的最大延迟时间。
 
      7.ISR、OSR、AR 是什么？
-         ISR：In-Sync Replicas 副本同步队列
-         OSR：Out-of-Sync Replicas
-         AR：Assigned Replicas 所有副本
+         ISR：In-Sync Replicas 副本同步队列, 速率和leader相差低于10秒的follower的集合
+         OSR：Out-of-Sync Replicas, 速率和leader相差大于10秒的follower
+         AR：Assigned Replicas 所有副本, 全部分区的follower
          ISR是由leader维护，follower从leader同步数据有一些延迟（具体可以参见 图文了解 Kafka 的副本复制机制），超过相应的阈值会把 follower 剔除出 ISR, 存入OSR（Out-of-Sync Replicas ）列表，新加入的follower也会先存放在OSR中。AR=ISR+OSR。
 
      8.Kafka 的每个分区只能被一个消费者线程
@@ -275,6 +275,77 @@ public class KafkaLearning {
              1.指明 partition 的情况下，直接将指明的值直接作为 partiton 值；
              2.没有指明 partition 值但有 key 的情况下，将 key 的 hash 值与 topic 的 partition 数进行取余得到 partition 值；（具体实现可参考：默认分区器org.apache.kafka.clients.producer.internals.DefaultPartitioner中的 partition() 方法）
              3.既没有 partition 值又没有 key 值的情况下，第一次调用时随机生成一个整数（后面每次调用在这个整数上自增），将这个值与 topic 可用的 partition 总数取余得到 partition值，也就是常说的 round-robin 算法。这也是默认的分区分配策略，能够保证负载均衡
+
+     20.Kafka 是如何实现高吞吐率的？
+         Kafka是分布式消息系统，需要处理海量的消息，Kafka的设计是把所有的消息都写入速度低容量大的硬盘，以此来换取更强的存储能力，但实际上，使用硬盘并没有带来过多的性能损失。kafka主要使用了以下几个方式实现了超高的吞吐率：
+             •顺序读写；
+             •零拷贝
+             •文件分段
+             •批量发送
+             •数据压缩。
+
+     21.Kafka幂等性介绍
+         如何实现幂等
+             HTTP/1.1中对幂等性的定义是：一次和多次请求某一个资源对于资源本身应该具有同样的结果（网络超时等问题除外）。也就是说，其任意多次执行对资源本身所产生的影响均与一次执行的影响相同
+             实现幂等的关键点就是服务端可以区分请求是否重复，过滤掉重复的请求。要区分请求是否重复的有两点：
+                 唯一标识：要想区分请求是否重复，请求中就得有唯一标识。例如支付请求中，订单号就是唯一标识
+                 记录下已处理过的请求标识：光有唯一标识还不够，还需要记录下那些请求是已经处理过的，这样当收到新的请求时，用新请求中的标识和处理记录进行比较，如果处理记录中有相同的标识，说明是重复交易，拒绝掉
+             Kafka幂等性实现原理
+                 为了实现Producer的幂等性，Kafka引入了Producer ID（即PID）和Sequence Number。
+
+                 PID。每个新的Producer在初始化的时候会被分配一个唯一的PID，这个PID对用户是不可见的。
+                 Sequence Numbler。（对于每个PID，该Producer发送数据的每个<Topic, Partition>都对应一个从0开始单调递增的Sequence Number
+                 Kafka可能存在多个生产者，会同时产生消息，但对Kafka来说，只需要保证每个生产者内部的消息幂等就可以了，所有引入了PID来标识不同的生产者。
+
+                 对于Kafka来说，要解决的是生产者发送消息的幂等问题。也即需要区分每条消息是否重复。
+                 Kafka通过为每条消息增加一个Sequence Numbler，通过Sequence Numbler来区分每条消息。每条消息对应一个分区，不同的分区产生的消息不可能重复。所有Sequence Numbler对应每个分区
+
+                 Broker端在缓存中保存了这seq number，对于接收的每条消息，如果其序号比Broker缓存中序号大于1则接受它，否则将其丢弃。这样就可以实现了消息重复提交了。但是，只能保证单个Producer对于同一个<Topic, Partition>的Exactly Once语义。不能保证同一个Producer一个topic不同的partion幂等。
+
+     22.Kafka 缺点？
+         由于是批量发送，数据并非真正的实时；
+         •对于mqtt协议不支持；
+         •不支持物联网传感数据直接接入；
+         •仅支持统一分区内消息有序，无法实现全局消息有序；
+         •监控不完善，需要安装插件；
+         •依赖zookeeper进行元数据管理；
+
+     23.Kafka 分区数可以增加或减少吗？为什么？
+         我们可以使用 bin/kafka-topics.sh 命令对 Kafka 增加 Kafka 的分区数据，但是 Kafka 不支持减少分区数。
+         Kafka 分区数据不支持减少是由很多原因的，比如减少的分区其数据放到哪里去？是删除，还是保留？删除的话，那么这些没消费的消息不就丢了。如果保留这些消息如何放到其他分区里面？追加到其他分区后面的话那么就破坏了 Kafka 单个分区的有序性。
+         如果要保证删除分区数据插入到其他分区保证有序性，那么实现起来逻辑就会非常复杂。
+
+     24.kafka维护消息状态的跟踪方法
+         Kafka中的Topic 被分成了若干分区，每个分区在同一时间只被一个 consumer 消费。然后再通过offset进行消息位置标记，通过位置偏移来跟踪消费状态。相比其他一些消息队列使用“一个消息被分发到consumer 后 broker
+         就马上进行标记或者等待 customer 的通知后进行标记”的优点是，避免了通信消息发送后，可能出现的程序奔溃而出现消息丢失或者重复消费的情况。同时也无需维护消息的状态，不用加锁，提高了吞吐量。
+
+     25.zookeeper对于kafka的作用是什么?
+         Zookeeper 主要用于在集群中不同节点之间进行通信，在 Kafka 中，它被用于提交偏移量，因此如果节点在任何情况下都失败了，它都可以从之前提交的偏移量中获取，除此之外，它还执行其他活动，
+         如: leader 检测、分布式同步、配置管理、识别新节点何时离开或连接、集群、节点实时状态等等。
+
+     26.kafka判断一个节点还活着的有那两个条件？
+         （1）节点必须维护和 ZooKeeper 的连接，Zookeeper 通过心跳机制检查每个节点的连接
+         （2）如果节点是个 follower,他必须能及时的同步 leader 的写操作，延时不能太久
+
+     27.kafka 分布式（不是单机）的情况下，如何保证消息的顺序消费?
+         Kafka 中发送 1 条消息的时候，可以指定(topic, partition, key) 3 个参数，partiton 和 key 是可选的。
+         Kafka 分布式的单位是 partition，同一个 partition 用一个 write ahead log 组织，所以可以保证FIFO 的顺序。不同 partition 之间不能保证顺序。因此你可以指定 partition，将相应的消息发往同 1个 partition，并且在消费端，Kafka 保证1 个 partition 只能被1 个 consumer 消费，就可以实现这些消息的顺序消费。
+         另外，你也可以指定 key（比如 order id），具有同 1 个 key 的所有消息，会发往同 1 个partition，那这样也实现了消息的顺序消息。
+
+     28.partition的数据文件（offffset，MessageSize，data）
+         partition中的每条Message包含了以下三个属性： offset，MessageSize，data，其中offset表示Message在这个partition中的偏移量，offset不是该Message在partition数据文件中的实际存储位置，而是逻辑上一个值，它唯一确定了partition中的一条Message，可以认为offset是partition中Message的 id； MessageSize表示消息内容data的大小；data为Message的具体内容。
+
+     29.kafka如何实现数据的高效读取？（顺序读写、分段命令、二分查找）
+         Kafka为每个分段后的数据文件建立了索引文件，文件名与数据文件的名字是一样的，只是文件扩展名为index。 index文件中并没有为数据文件中的每条Message建立索引，而是采用了稀疏存储的方式，每隔一定字节的数据建立一条索引。这样避免了索引文件占用过多的空间，从而可以将索引文件保留在内存中。
+
+     30.Kafka 中的HW、LEO等分别代表什么？
+         HW：高水位，指消费者只能拉取到这个offset之前的数据
+         LEO：标识当前日志文件中下一条待写入的消息的offset，大小等于当前日志文件最后一条消息的offset+1.
+
+     31.Kafka为什么不支持读写分离？
+         (1)这其实是分布式场景下的通用问题，因为我们知道CAP理论下，我们只能保证C（一致性）和A（可用性）取其一，如果支持读写分离，那其实对于一致性的要求可能就会有一定折扣，因为通常的场景下，副本之间都是通过同步来实现副本数据一致的，那同步过程中肯定会有时间的消耗，如果支持了读写分离，就意味着可能的数据不一致，或数据滞后。
+         (2)Leader/Follower模型并没有规定Follower副本不可以对外提供读服务。很多框架都是允许这么做的，只是 Kafka最初为了避免不一致性的问题，而采用了让Leader统一提供服务的方式。
+         (3)不过，自Kafka 2.4之后，Kafka提供了有限度的读写分离，也就是说，Follower副本能够对外提供读服务。
      */
 }
 
