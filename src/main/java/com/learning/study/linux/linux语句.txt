@@ -59,3 +59,22 @@ ls | wc -l
 
 ##-------------------- 连接端口 ----------------------
 telnet 172.16.102.89 9104
+
+##-------------------- nacos单机启动 ----------------------
+startup.sh -m standalone
+
+##-------------------- for循环语句 ----------------------
+echo "start gather-crawler"
+cd /home/ubuntu/temp
+for ((i=0; i<=11; i++));do
+    pid=`ps -ef|grep gather-crawler-fz$i.jar|grep -v grep|awk '{print $2}'`
+    kill -9 $pid
+done
+for ((i=0; i<=11; i++));do
+    cd /home/ubuntu/gather-crawler$i
+    rm -rf gather-crawler-fz$i.jar
+    cp /home/ubuntu/temp/gather-crawler-0.0.1-SNAPSHOT.jar /home/ubuntu/gather-crawler$i/gather-crawler-fz$i.jar
+    nohup /usr/bin/java -jar -Duser.timezone=GMT+08 gather-crawler-fz$i.jar > gather-crawler-fz$i.jar.log 2>&1 &
+done
+
+rm -rf /home/ubuntu/temp/gather-crawler-0.0.1-SNAPSHOT.jar
