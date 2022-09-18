@@ -78,3 +78,7 @@ for ((i=0; i<=11; i++));do
 done
 
 rm -rf /home/ubuntu/temp/gather-crawler-0.0.1-SNAPSHOT.jar
+
+##-------------------- 查看jvm垃圾回收器 ----------------------
+-XX:+PrintCommandLineFlagsjvm参数可查看默认设置收集器类型
+-XX:+PrintGCDetails亦可通过打印的GC日志的新生代、老年代名称判断
