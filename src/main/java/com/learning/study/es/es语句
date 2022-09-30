@@ -1,0 +1,111 @@
+######################### 新增索引 #################################
+PUT mytest
+{
+  "settings": {
+    "number_of_shards": 6,
+    "number_of_replicas": 1,
+    "refresh_interval": "5s",
+    "analysis": {
+      "normalizer": {
+        "my_normalizer": {
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ],
+          "type": "custom"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "a": {
+        "type": "keyword"
+      },
+      "b": {
+        "type": "integer"
+      },
+      "c": {
+        "type": "text"
+      }
+    }
+  }
+}
+
+######################### 新增字段 #################################
+PUT mytest/_mapping
+{
+  "properties" : {
+        "d" : {
+          "type" : "keyword"
+        }
+      }
+}
+
+######################### reindex #################################
+POST _reindex
+{
+     "source": {
+         "remote": {
+           "host": "http://172.16.101.21:9200",
+           "socket_timeout": "30s",
+           "connect_timeout": "30s"
+         },
+        "index": "gather_base_test_message"
+     },
+     "dest": {
+            "index": "gather_base_fz_message"
+     }
+}
+
+######################### 新增数据 #################################
+POST mytest/_doc
+{
+  "a":"a1",
+  "b":"b1"
+}
+
+######################### 修改数据 #################################
+POST gather_base_test_user/_update_by_query
+{
+  "query": {
+    "term": {
+      "hash_code": {
+        "value": "telegram,-1001274333834,1531266698"
+      }
+    }
+  },
+  "script": {
+    "source": "ctx._source['group_id']='-1001274333834'"
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
