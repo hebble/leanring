@@ -2,6 +2,7 @@ package com.learning.study.spring;
 
 /**
  * https://blog.csdn.net/a6636656/article/details/124429257
+ * https://blog.csdn.net/weixin_38192427/article/details/121184221 SpringCloud之Hystrix隔离、熔断、降级
  */
 public class SpringCloudLeanring {
     /**
@@ -132,6 +133,128 @@ public class SpringCloudLeanring {
             Ribbon使用discoveryClient从注册中心读取目标服务信息，对同一接口请求进行计数，使用%取余算法获取目标服务集群索引，返回获取到的目标服务信息。
             @LoadBalanced注解的作用
                 开启客户端负载均衡。
+            如:
+                @LoadBalanced
+                @Autowired
+                private List<RestTemplate> restTemplates = Collections.emptyList();
+            也就是，所有加了@LoadBalanced注解的RestTemplate，会被注入到这个地方，在这个地方，实质上是进行了RestTemplate的自定义配置。
+
+     5.Hystrix
+        5.1 什么是断路器
+            当一个服务调用另一个服务由于网络原因或自身原因出现问题, 调用者就会等待被调用者的响应, 当更多的服务请求到这些资源导致更多的请求等待, 发生连锁效应(雪崩效应)
+            断路器有三种状态:
+                打开状态: 一段时间内达到一定的次数无法调用, 并且多次监测美欧恢复的迹象, 断路器完全打开, 那么下次请求就不会请求该服务
+                半开状态: 短时间内, 有恢复迹象, 断路器会将部分请求发给该服务, 正常调用时, 断路器关闭
+                关闭状态: 当服务一直处于正常状态, 能正常调用
+        5.2 什么是Hystrix?
+            在分布式系统, 我们一定会依赖各种服务, 那么这些个服务一定会出现失败的情况, 就会导致雪崩, Hystrix就是这样的一个工具, 防雪崩利器, 它具有服务降级, 服务熔断, 服务隔离, 监控等
+            一些防止雪崩的技术
+            Hystrix有四种防雪崩方式:
+                (1)服务降级: 接口调用事变就调用本地的方法返回一个空
+                (2)服务熔断: 接口调用失败就会进入调用接口提前定义好的一个熔断的方法, 返回错误信息
+                (3)服务隔离: 隔离服务之间相互影响
+                (4)服务监控: 在服务发生调用时, 会将每秒请求数, 成功请求数等运行指标记录下来
+        5.3 谈谈服务雪崩效应
+            雪崩效应是在大型互联网项目中，当某个服务发生宕机时，调用这个服务的其他服务也会发生宕机，大型项目的微服务之间的调用是互通的，这样就会将服务的不可用逐步扩大到各个其他服务中，从而使整个项目的服务
+            宕机崩溃发生雪崩效应的原因有以下几点:
+                (1)单个服务的代码存在bug.
+                (2)请求访问量激增导致服务发生崩溃(如大型商城的枪红包，秒杀功能).
+                (3)服务器的硬件故障也会导致部分服务不可用
+        5.4 在微服务中, 如何保护服务?
+            一般使用使用Hystrix框架，实现服务隔离来避免出现服务的雪崩效应，从而达到保护服务的效果。当微服务中，高并发的数据库访问量导致服务线程阻塞，使单个服务宕机，服务的不可用会蔓延到其他服务，
+            引起整体服务灾难性后果，使用服务降级能有效为不同的服务分配资源一旦服务不可用则返回友好提示，不占用其他服务资源，从而避免单个服务崩溃引发整体服务的不可用
+        5.5 服务雪崩效应产生的原因
+            因为Tomcat默认情况下只有一个线程池来维护客户端发送的所有的请求，这时候某一接口在某一时刻被大量访问就会占据tomcat线程池中的所有线程，其他请求处于等待状态，无法连接到服务接口。
+        5.6 谈谈服务降级、熔断、服务隔离
+            服务降级:
+                当客户端请求服务器端的时候，防止客户端一直等待，不会处理业务逻辑代码，直接返回一个友好的提示给客户端。
+            服务熔断:
+                是在服务降级的基础上更直接的一种保护方式，当在一个统计时间范围内的请求失败数量达到设定值(requestVolumeThreshold)或当前的请求错误率达到设定的错误率阈值
+                (errorThresholdPercentage)时开启断路，之后的请求直接走fallback方法，在设定时间(sleepWindowlnMilliseconds)后尝试恢复。
+            服务隔离:
+                就是Hystrix为隔离的服务开启一个独立的线程池，这样在高并发的情况下不会影响其他服务。服务隔离有线程池和信号量两种实现方式，一般使用线程池方式。
+        5.7 服务降级、熔断、服务隔离的使用
+            #从springcloud Dalston版本开始，Feign的Hystrix支持默认关闭，需要手动设置开启
+                feign.hystrix.enabled=true
+            #第一次启动项目时，请求接口查询数据库有点耗时，会进入降级策略，所以将hystrix的超时时间设置为3s，默认是1s，这是全局设置
+                hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=3000
+            5.7.1 服务降级的实现(以下服务下线或服务超时都可测)
+                (1)方式一
+                    使用 feign 的注解 @FeignClient 的属性 fallback 指定的降级回退方法
+                     @FeignClient(name = "eureka-client-producer", fallback = UserConsumerFeignFallback.class)
+                     public interface UserConsumerFeign {
+                         @GetMapping(path = "/user/selectUserById")
+                         ResultVo selectUserById(@RequestParam(name = "id") Integer id);
+                     }
+                (2)方式二
+                     使用 hystrix 提供的注解 @HystrixCommand 的属性 fallbackMethod 来指定降级回退方法
+                     @Slf4j
+                     @Service
+                     public class UserConsumerServiceImpl implements UserConsumerService {
+                             @Autowired
+                             private UserConsumerFeign userConsumerFeign;
+
+                            @HystrixCommand(fallbackMethod = "queryOneByIdFallback")
+                            @Override
+                            public ResultVo queryOneById(Integer id) {
+                                ResultVo resultVo = userConsumerFeign.selectUserById(id);
+                                log.info("resultVo为：" + resultVo.toString());
+                                log.info("调用服务提供方的端口为：" + resultVo.getPort());
+                                return resultVo;
+                            }
+
+                            public ResultVo queryOneByIdFallback(Integer id) {
+                                ResultVo resultVo = new ResultVo();
+                                resultVo.setId(id);
+                                resultVo.setUsername("恭喜你已进入UserConsumerServiceImpl类所在的服务降级区域");
+                                resultVo.setNickname("恭喜你已进入UserConsumerServiceImpl类所在的服务降级区域");
+                                return resultVo;
+                            }
+                    }
+                (3)方式三
+                     每一个方法独立配置降级的话会造成代码冗余，加大了工作量。此时可以使用注解 @DefaultProperties 的 defaultFallback 属性来指定类的全局降级回退方法
+                     @RestController
+                     @Slf4j
+                     @DefaultProperties(defaultFallback = "payment_Global_FallackMethod")
+                     public class PaymentController {
+
+                             @Resource
+                             private PaymentHystrixService paymentService;
+
+                             @GetMapping("/consumer/payment/hystrix/ok/{id}")
+                             public String paymentInfo_OK(@PathVariable("id") Integer id) {
+                                 String result = paymentService.paymentInfo_OK(id);
+                                 log.info("*******result:" + result);
+                                 return result;
+                             }
+
+                             @GetMapping("/consumer/payment/hystrix/timeout/{id}")
+                             @HystrixCommand(fallbackMethod = "paymentTimeOutFallbackMethod", commandProperties = {
+                             @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1500")  //3秒钟以内就是正常的业务逻辑
+                             })
+                             public String paymentInfo_TimeOut(@PathVariable("id") Integer id) {
+                                 String result = paymentService.paymentInfo_TimeOut(id);
+                                 return result;
+                             }
+
+                             //兜底方法
+                             public String paymentTimeOutFallbackMethod(@PathVariable("id") Integer id) {
+                                return "我是消费者80，对付支付系统繁忙请10秒钟后再试或者自己运行出错请检查自己,(┬＿┬)";
+                             }
+
+                              //全局fallback处理方法
+                            public String payment_Global_FallackMethod(@PathVariable("id") Integer id) {
+                                return "我是消费者80，对付支付系统繁忙请10秒钟后再试或者自己运行出错请检查自己,(┬＿┬)";
+                            }
+                        }
+            5.7.2 服务熔断的实现
+                 熔断与降级的区别:
+                     (1)服务熔断的核心是断路器（跳闸），没有断路器（配置）的熔断那就不是熔断了
+                     (2)服务熔断也会触发服务降级回退方法的
+                     (3)服务熔断的配置：回退，兜底方法 + 断路器配置，二者缺一不可
+                     (4)服务降级的配置：回退，兜底方法
+
+
      */
 }
 
