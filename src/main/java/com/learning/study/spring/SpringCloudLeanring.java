@@ -247,13 +247,108 @@ public class SpringCloudLeanring {
                                 return "我是消费者80，对付支付系统繁忙请10秒钟后再试或者自己运行出错请检查自己,(┬＿┬)";
                             }
                         }
-            5.7.2 服务熔断的实现
+            5.7.2 服务熔断的实现(服务熔断包含服务降级)
                  熔断与降级的区别:
                      (1)服务熔断的核心是断路器（跳闸），没有断路器（配置）的熔断那就不是熔断了
                      (2)服务熔断也会触发服务降级回退方法的
                      (3)服务熔断的配置：回退，兜底方法 + 断路器配置，二者缺一不可
                      (4)服务降级的配置：回退，兜底方法
+                代码演示:
+                     @Slf4j
+                     @Service
+                     public class UserConsumerServiceImpl implements UserConsumerService {
 
+                         @Autowired
+                         private UserConsumerFeign userConsumerFeign;
+
+                         //在 10s 统计窗口时间之内，有 10 次请求，请求失败率达到 50% 的时候，此时断路器将会开启，
+                         //并在 5s 后断路器开始尝试恢复正常，如果没有错误，就完全恢复
+                        @HystrixCommand(fallbackMethod = "queryOneByIdFallback", commandProperties = {
+                                @HystrixProperty(name = "metrics.rollingStats.timeInMilliseconds", value = "10000"),// 统计窗口时间，默认10s
+                                @HystrixProperty(name = "circuitBreaker.requestVolumeThreshold", value = "10"),// 断路器熔多断的最小请求数，默认20
+                                @HystrixProperty(name = "circuitBreaker.sleepWindowInMilliseconds", value = "5000"),// 断路器打开后，多久以后开始尝试恢复，默认5s
+                                @HystrixProperty(name = "circuitBreaker.errorThresholdPercentage", value = "50")// 请求失败率，默认50%
+                        })
+                        @Override
+                        public ResultVo queryOneById(Integer id) {
+                            if (id < 0) {
+                                throw new RuntimeException("id 不能为负数");
+                            }
+                            ResultVo resultVo = userConsumerFeign.selectUserById(id);
+                            log.info("resultVo为：" + resultVo.toString());
+                            log.info("调用服务提供方的端口为：" + resultVo.getPort());
+                            return resultVo;
+                        }
+
+                        public ResultVo queryOneByIdFallback(Integer id) {
+                            ResultVo resultVo = new ResultVo();
+                            resultVo.setId(id);
+                            resultVo.setUsername("id 不能为负数，恭喜你已进入UserConsumerServiceImpl类所在的服务熔断区域");
+                            resultVo.setNickname("id 不能为负数，恭喜你已进入UserConsumerServiceImpl类所在的服务熔断区域");
+                            return resultVo;
+                        }
+                    }
+                测试在 10s 窗口时间之内，我们发送 10 次请求，请求失败率达到 50% 时，让断路器打开
+                传入参数 -1，此时断路器已经打开。此时在 5s 时间之内，再传入参数 1，发送请求（5s 后断路器开始尝试恢复正常）
+                可以看到，即使发送请求传入的参数是 1，结果依旧是熔断状态，因为断路器打开后，在设置的时间内（我们设置 5s），所有的请求都不会执行，直到过了这个设置的时间内之后，这时断路器是半开状态的。我们再次发送请求传入的参数是 1
+                此时发送请求传入的参数是 1，结果正常，此时的断路器就会关闭了
+            5.7.3 服务隔离
+                 hystrix 进行隔离，有线程池隔离和信号量两种方式
+                 (1)信号量隔离
+                     信号量隔离，就是一个计数器，显示服务的请求数量，起到了限流的作用
+                 (2)线程池隔离
+                     hystrix 的线程池隔离：接口的请求在来到 hystrix 之前还要经过 controller、service 等，真正被 hystrix 接收到后，hystrix 才会创建线程池，把请求放到新的线程中，请求下游的服务
+                     这个过程中，hystrix 就可以控制等待超时、失败请求统计等操作。所以这个线程池的大小就决定了对下游服务的并发请求量，实际上也是在这里起到了对下游服务的一个保护。重点就是对下游服务的保护
+                     对自己所在的服务是否有保护呢，如果我们的 hystrix 超时时间（execution.isolation.thread.timeoutInMilliseconds）设置的非常长，那么当下游服务响应慢或无响应时，hystrix 所在的服务也会长时间挂起，
+                     这样 tomcat 的线程池也就很快会耗尽，失去保护作用。所以我们的 hystrix 超时时间，失败统计次数，失败比例等参数设置的合理才能起到对自己的保护作用，也就是对下游响应慢或无响应的服务，能够快速熔断，
+                     进行降级，返回降级结果，释放宝贵的 tomcat 线程资源
+                 (3)代码示例:
+                     @Service
+                     public class UserServiceImpl implements UserService {
+
+                            private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
+                            @Autowired
+                            private UserFeign userFeign;
+
+                          * threadPoolKey：1：如果设置的groupKey值已经存在，他会使用这个groupKey值。
+                          *       			这种情况下：同一个groupKey下的依赖调用共用同一个线程池
+                          * 				  2：如果groupKey值不存在，则会对于这个groupKey新建一个线程池
+                          *
+                          * 1：threadPoolKey的默认值是groupKey，而groupKey默认值是@HystrixCommand标注的方法所在类名
+                          * 2：可以通过在类上加@DefaultProperties(threadPoolKey="xxx")设置默认的threadPoolKey
+                          * 3；可以通过@HystrixCommand(threadPoolKey="xxx")指定当前HystrixCommand实例的threadPoolKey
+                          * 4：threadPoolKey用于从线程池缓存中获取线程池和初始化创建线程池，由于默认以groupKey即类名为threadPoolKey，那么默认所有在一个类中的HystrixCommand共用一个线程池
+                          * 5：动态配置线程池 --
+                          * 	可以通过hystrix.command.HystrixCommandKey.threadPoolKeyOverride=线程池key动态设置
+                          * 	 threadPoolKey，对应的HystrixCommand所使用的线程池也会重新创建，还可以继续通过
+                          *   hystrix.threadpool.HystrixThreadPoolKey.coreSize=n和hystrix.threadpool.HystrixThreadPoolKey.maximumSize=n动态设置线程池大小
+                          * 6：commandKey的默认值是@HystrixCommand标注的方法名，即每个方法会被当做一个HystrixCommand
+                        @HystrixCommand(threadPoolKey = "time", threadPoolProperties = {
+                                @HystrixProperty(name = "coreSize", value = "2"),
+                                @HystrixProperty(name = "maxQueueSize", value = "20")}, commandProperties = {
+                                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "9000")})
+                        @Override
+                        public String timeOut(Integer mills) {
+                            log.info("-----------mills:的值为：" + mills + "--------------");
+                            return userFeign.timeOut(mills);
+                        }
+
+                        // 一个类中的HystrixCommand使用两个线程池，进行线程隔离【和上面的方法隔离】
+                        @HystrixCommand(threadPoolKey = "time_1", threadPoolProperties = {
+                                @HystrixProperty(name = "coreSize", value = "2"),
+                                @HystrixProperty(name = "maxQueueSize", value = "20")}, commandProperties = {
+                                @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "9000")})
+                        @Override
+                        public String timeOut_1(Integer mills) {
+                            log.info("-----------mills:的值为：" + mills + "--------------");
+                            return userFeign.timeOut(mills);
+                        }
+                    }
+        5.8 服务降级底层是如何实现的？
+            Hystrix实现服务降级的功能是通过重写HystrixCommand中的getFallback()方法，当Hystrix的run方法或construct执行发生错误时转而执行getFallback()方法。
+
+     6.Feign
 
      */
 }
