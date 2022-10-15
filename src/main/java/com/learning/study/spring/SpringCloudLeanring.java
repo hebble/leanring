@@ -1,8 +1,9 @@
 package com.learning.study.spring;
 
 /**
- * https://blog.csdn.net/a6636656/article/details/124429257
+ * https://blog.csdn.net/a6636656/article/details/124429257 「面试必背」Spring Cloud面试题（2022最新版）
  * https://blog.csdn.net/weixin_38192427/article/details/121184221 SpringCloud之Hystrix隔离、熔断、降级
+ * https://baijiahao.baidu.com/s?id=1703999907968394289&wfr=spider&for=pc 硬核！美团大牛总结的25道Spring Cloud面试题，秋招必备秘籍
  */
 public class SpringCloudLeanring {
     /**
@@ -138,6 +139,16 @@ public class SpringCloudLeanring {
                 @Autowired
                 private List<RestTemplate> restTemplates = Collections.emptyList();
             也就是，所有加了@LoadBalanced注解的RestTemplate，会被注入到这个地方，在这个地方，实质上是进行了RestTemplate的自定义配置。
+        4.5 ribbon的负载均衡策略
+            默认的常见有随机规则,轮询规则,权重规则
+            随机不用说，轮询也不用说，权重意思是,请求时间越久的server,其被分配给客户端使用的可能性就越低。
+                配置文件配置
+                    Spring:
+                        ribbon:
+                            XXXX
+            ribbon也可以自定义策略。具体方法包括：
+                方法1.实现IRule接口
+                方法2.集成AbstractLoadBalancerRule 、PredicateBasedRule。
 
      5.Hystrix
         5.1 什么是断路器
@@ -247,7 +258,7 @@ public class SpringCloudLeanring {
                                 return "我是消费者80，对付支付系统繁忙请10秒钟后再试或者自己运行出错请检查自己,(┬＿┬)";
                             }
                         }
-            5.7.2 服务熔断的实现(服务熔断包含服务降级)
+            5.7.2 服务熔断的实现(服务熔断包含服务降级, 缺省是5秒内调用20次)
                  熔断与降级的区别:
                      (1)服务熔断的核心是断路器（跳闸），没有断路器（配置）的熔断那就不是熔断了
                      (2)服务熔断也会触发服务降级回退方法的
@@ -349,6 +360,42 @@ public class SpringCloudLeanring {
             Hystrix实现服务降级的功能是通过重写HystrixCommand中的getFallback()方法，当Hystrix的run方法或construct执行发生错误时转而执行getFallback()方法。
 
      6.Feign
+        6.1 什么是 Netflix Feign？它的优点是什么？
+            Feign 是受到 Retrofit，JAXRS-2.0 和 WebSocket 启发的 java 客户端联编程序。
+            Feign 的第一个目标是将约束分母的复杂性统一到 http apis，而不考虑其稳定性。
+            特点：
+                Feign 采用的是基于接口的注解
+                Feign 整合了ribbon，具有负载均衡的能力
+                整合了Hystrix，具有熔断的能力
+            使用方式
+                添加pom依赖。
+                启动类添加@EnableFeignClients
+                定义一个接口@FeignClient(name=“xxx”)指定调用哪个服务
+        6.2 Ribbon和Feign的区别？
+            1.Ribbon都是调用其他服务的，但方式不同。
+            2.启动类注解不同，Ribbon是@RibbonClient feign的是@EnableFeignClients
+            3.服务指定的位置不同，Ribbon是在@RibbonClient注解上声明，Feign则是在定义抽象方法的接口中使用@FeignClient声明。
+            4.调用方式不同，Ribbon需要自己构建http请求，模拟http请求。
+
+    7.Spring Cloud Bus
+        Spring Cloud Bus 是 Spring Cloud 体系内的消息总线，用来连接分布式系统的所有节点。
+        Spring Cloud Bus 将分布式的节点用轻量的消息代理（RibbitMQ、Kafka）连接起来。可以通过消息代理广播配置文件的更改，或服务之间的通讯，也可以用于监控。解决了微服务数据变更，及时同步的问题。
+        微服务一般都采用集群方式部署，而且在高并发下经常需要对服务进行扩容、缩容、上线、下线的操作。比如我们需要更新配置，又或者需要同时失效所有服务器上的某个缓存，需要向所有相关的服务器发送命令，
+        此时就可以选择使用 Spring Cloud Bus 了。总的来说，就是在我们需要把一个操作散发到所有后端相关服务器的时候，就可以选择使用 Spring Cloud Bus 了。
+
+    8.了解Spring Cloud Config 吗?
+        在分布式系统中，由于服务数量巨多，为了方便服务配置文件统一管理，实时更新，所以需要分布式配置中心组件。在Spring Cloud中，有分布式配置中心组件Spring Cloud Config，它支持配置服务放在配置服务的内存中（即本地），也支持放在远程Git仓库中。
+        在Spring Cloud Config 组件中，分两个角色，一是config server，二是config client。
+
+    9.说说你对Spring Cloud Gateway的理解
+        Spring Cloud Gateway是Spring Cloud官方推出的第二代网关框架，取代Zuul网关。网关作为流量的，在微服务系统中有着非常作用，网关常见的功能有路由转发、权限校验、限流控制等作用。
+        使用了一个RouteLocatorBuilder的bean去创建路由，除了创建路由RouteLocatorBuilder可以让你添加各种predicates和filters，predicates断言的意思，顾名思义就是根据具体的请求的规则，由具体的route去处理，filters是各种过滤器，用来对请求做各种判断和修改。
+
+    8.说说 RPC 的实现原理
+        首先需要有处理网络连接通讯的模块，负责连接建立、管理和消息的传输。其次需要有编 解码的模块，因为网络通讯都是传输的字节码，需要将我们使用的对象序列化和反序列 化。剩下的就是客户端和服务器端的部分，
+        服务器端暴露要开放的服务接口，客户调用服 务接口的一个代理实现，这个代理实现负责收集数据、编码并传输给服务器然后等待结果 返回。
+
+
 
      */
 }
