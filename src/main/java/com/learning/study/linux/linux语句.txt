@@ -17,7 +17,7 @@ curl -k --tlsv1 "https://8.215.78.132:60001/api_getphone"
 sudo apt-get install nginx -y
 
 ##-------------- 查看文件由大到小占用磁盘大小 --------------
-du -h --max-depth=1 --max-depth=N 决定统计每个目录的深度
+du -h --max-depth=1 (--max-depth=N 决定统计每个目录的深度)
 ##-------------- 算当前文件总大小 --------------
 du -sh
 ##-------------- 算当前文件下各文件大小 --------------
@@ -79,6 +79,11 @@ done
 
 rm -rf /home/ubuntu/temp/gather-crawler-0.0.1-SNAPSHOT.jar
 
-##-------------------- 查看jvm垃圾回收器 ----------------------
+##-------------------- 设置查看jvm垃圾回收器 ----------------------
 -XX:+PrintCommandLineFlagsjvm参数可查看默认设置收集器类型
 -XX:+PrintGCDetails亦可通过打印的GC日志的新生代、老年代名称判断
+
+##---------------------------查看jvm参数------------------------------------
+jinfo -flags pid (jinfo flags pid在高版本才能正常使用，我在jdk1.8这个版本不能正常使用)
+jinfo -flag MaxHeapSize pid #查看最大堆内存
+jinfo -flag PrintGCDetails pid #查看是否打印GC日志
