@@ -1,0 +1,8 @@
+1.SSH密钥生成
+    在windows下我们可以使用 Git Bash.exe来生成密钥，可以通过右键菜单打开Git Bash
+        ssh-keygen -t rsa
+    GitHub 在 2022 年 3 月 15 日之后将不再支持 RSA 算法生成的密钥，原因是 RSA 不够安全,实际上使用的是 RSA 算法来生成的密钥，现在只要更改加密算法即可，可以选择 ed2551
+        ssh-keygen -t ed25519
+    全部回车即可
+    执行命令完成后,在window本地用户.ssh目录C:\Users\用户名\.ssh下面生成如下名称的公钥和私钥:
+
