@@ -329,7 +329,129 @@ public class JavaBaseLearning {
                  序列化后的二进制流大小能体现序列化的性能。序列化后的二进制数组越大，占用的存储空间就越多，存储硬件的成本就越高。如果我们是进行网络传输，则占用的带宽就更多，这时就会影响到系统的吞吐量。
             7.4.4 序列化性能太差
                 序列化的速度也是体现序列化性能的重要指标，如果序列化的速度慢，网络通信效率就低，从而增加系统的响应时间
+
+     8.Atomic原子类与CAS原理
+         8.1 Atomic 原子类的原理
+             Atomic 原子操作类是基于无锁 CAS + volatile 实现的，并且类中的所有方法都使用 final 修饰，进一步保证线程安全。而 CAS 算法的具体实现方式在于 Unsafe 类中，Unsafe 类的所有方法都是 native 修饰的，也就是说所有方法都是直接调用操作系统底层资源进行执行相应任务。
+             Atomic 使用乐观策略，每次操作时都假设没有冲突发生，并采用 volatile 配合 CAS 去修改内存中的变量，如果失败则重试，直到成功为止。
+             乐观锁：乐观锁认为竞争不总是发生，因此每次操作共享资源时都不需要加锁，并将“比较-替换”这两个动作作为一个原子操作去修改内存中的变量，一旦发生冲突就重试，直到成功为止。无锁策略就是一种乐观策略，采用 volatile + CAS 来保证线程执行的安全性。
+             悲观锁：悲观锁认为每次访问共享资源总会发生冲突，因此每次对共享资源进行操作时，都会去事先申请一个独占的锁，比如 synchronized 和 ReentronLock 都是独占锁。
+         8.2 什么是 CAS：Compare And Swap
+            8.2.1 CAS 的算法核心思想：
+                 执行函数：CAS(V,E,U)，其包含3个参数：内存值V，旧预期值E，要修改的值U。
+                     (1)当且仅当 预期值E 和 内存值V 相同时，才会将内存值修改为U并返回true；
+                     (2)若V值和E值不同，则说明已经有其他线程做了更新，则当前线程不执行更新操作，但可以选择重新读取该变量再尝试再次修改该变量，也可以放弃操作。
+                 CAS 一定要 volatile 变量配合，这样才能保证每次拿到的变量是主内存中最新的那个值，否则旧的预期值E对某条线程来说，永远是一个不会变的值E，只要某次CAS操作失败，永远都不可能成功。由于 CAS 无锁操作中没有锁的存在，因此不可能出现死锁的情况，也就是天生免疫死锁。
+            8.2.2 CPU 指令对 CAS 的支持
+                 由于 CAS 的步骤很多，那会不会存在一种情况：假设某个线程在判断 V 和 E 相同后，正要赋值时，切换了线程，更改了值，从而造成了数据不一致呢？答案是否定的，因为 CAS 是一种系统原语，原语属于操作系统用语范畴，是由若干条指令组成的，用于完成某个功能的一个过程，
+                 并且原语的执行必须是连续的，在执行过程中不允许被中断，也就是说CAS是一条CPU的原子指令，不会造成所谓的数据不一致问题。
+            8.2.3 CAS 的 ABA 问题及其解决方案：
+                 假设这样一种场景，当第一个线程执行 CAS(V,E,U) 操作，在获取到当前变量V，准备修改为新值U前，另外两个线程已连续修改了两次变量V的值，使得该值又恢复为旧值，这样的话，我们就无法正确判断这个变量是否已被修改过。
+                 解决方法：使用带版本的标志或者时间戳解决ABA问题，在更新数据时，只有要更新的数据和版本标识符合期望值，才允许替换。
+         8.3 Unsafe 类
+             Atomic 中 CAS 操作的执行依赖于 Unsafe 类的方法，Unsafe 类中的所有方法都是 native 修饰的，也就是说所有方法都直接调用操作系统底层资源执行相应任务。Unsafe类提供了很多功能，这里我们主要介绍 Unsafe 的 CAS，
+             对其他功能感兴趣的读者可以去阅读这篇文章：https://blog.csdn.net/javazejian/article/details/72772470
+             Unsafe 类存在于 sun.misc 包中，其内部方法操作可以像C的指针一样直接操作内存，单从名称看来就可以知道该类是非安全的，因为 Unsafe 拥有着类似于C的指针操作，因此总是不应该首先使用 Unsafe 类，Java 官方也不建议直接使用的 Unsafe 类
+             无锁操作 CAS 是一些CPU直接支持的指令，在 Java 中无锁操作 CAS 基于以下3个方法实现，在稍后讲解Atomic系列内部方法就是基于下述方法的实现的。
+                 //第一个参数o为给定对象，offset为对象内存的偏移量，通过这个偏移量迅速定位字段并设置或获取该字段的值，
+                 //expected表示期望值，x表示要设置的值，下面3个方法都通过CAS原子指令执行操作。
+                 public final native boolean compareAndSwapObject(Object o, long offset,Object expected, Object x);
+                 public final native boolean compareAndSwapInt(Object o, long offset,int expected,int x);
+                 public final native boolean compareAndSwapLong(Object o, long offset,long expected,long x);
+            同时 Unsafe 类中在 JDK8 新增的几个方法，它们的实现是基于上述的CAS方法
+                具体方法省略
+         8.4 原子操作类 Atomic
+             原子更新基本类型主要包括3个类：
+                 AtomicBoolean：原子更新布尔类型
+                 AtomicInteger：原子更新整型
+                 AtomicLong：原子更新长整型
+             这3个类的实现原理和使用方式几乎是一样的，这里我们以 AtomicInteger 为例进行分析，AtomicInteger 主要是针对 int 类型的数据执行原子操作，它提供了原子自增方法、原子自减方法以及原子赋值方法等，鉴于AtomicInteger的源码不多，我们直接看源码：
+                 public class AtomicInteger extends Number implements java.io.Serializable {
+                     private static final long serialVersionUID = 6214790243416807050L;
+                     // 获取指针类Unsafe
+                     private static final Unsafe unsafe = Unsafe.getUnsafe();
+                     //下述变量value在AtomicInteger实例对象内的内存偏移量
+                     private static final long valueOffset;
+
+                     static {
+                         try {
+                             //通过unsafe类的objectFieldOffset()方法，获取value变量在对象内存中的偏移
+                             //通过该偏移量valueOffset，unsafe类的内部方法可以获取到变量value对其进行取值或赋值操作
+                             valueOffset = unsafe.objectFieldOffset
+                             (AtomicInteger.class.getDeclaredField("value"));
+                         } catch (Exception ex) { throw new Error(ex); }
+                     }
+                     //当前AtomicInteger封装的int变量value
+                     private volatile int value;
+
+                     public AtomicInteger(int initialValue) {
+                        value = initialValue;
+                     }
+                     public AtomicInteger() {
+                     }
+                     //获取当前最新值，
+                     public final int get() {
+                        return value;
+                     }
+                     //设置当前值，具备volatile效果，方法用final修饰是为了更进一步的保证线程安全。
+                     public final void set(int newValue) {
+                        value = newValue;
+                     }
+                     //最终会设置成newValue，使用该方法后可能导致其他线程在之后的一小段时间内可以获取到旧值，有点类似于延迟加载
+                     public final void lazySet(int newValue) {
+                        unsafe.putOrderedInt(this, valueOffset, newValue);
+                     }
+                     //设置新值并获取旧值，底层调用的是CAS操作即unsafe.compareAndSwapInt()方法
+                     public final int getAndSet(int newValue) {
+                        return unsafe.getAndSetInt(this, valueOffset, newValue);
+                     }
+                     //如果当前值为expect，则设置为update(当前值指的是value变量)
+                     public final boolean compareAndSet(int expect, int update) {
+                        return unsafe.compareAndSwapInt(this, valueOffset, expect, update);
+                     }
+                     //当前值加1返回旧值，底层CAS操作
+                     public final int getAndIncrement() {
+                        return unsafe.getAndAddInt(this, valueOffset, 1);
+                     }
+                     //当前值减1，返回旧值，底层CAS操作
+                     public final int getAndDecrement() {
+                        return unsafe.getAndAddInt(this, valueOffset, -1);
+                     }
+                     //当前值增加delta，返回旧值，底层CAS操作
+                     public final int getAndAdd(int delta) {
+                        return unsafe.getAndAddInt(this, valueOffset, delta);
+                     }
+                     //当前值加1，返回新值，底层CAS操作
+                     public final int incrementAndGet() {
+                        return unsafe.getAndAddInt(this, valueOffset, 1) + 1;
+                     }
+                     //当前值减1，返回新值，底层CAS操作
+                     public final int decrementAndGet() {
+                        return unsafe.getAndAddInt(this, valueOffset, -1) - 1;
+                     }
+                     //当前值增加delta，返回新值，底层CAS操作
+                     public final int addAndGet(int delta) {
+                        return unsafe.getAndAddInt(this, valueOffset, delta) + delta;
+                     }
+                     //省略一些不常用的方法....
+                 }
+             可以发现 AtomicInteger 原子类的内部几乎是基于 Unsafe 类中的 CAS 相关操作的方法实现的，这也同时证明 AtomicInteger 是基于无锁实现的，这里重点分析自增操作实现过程，其他方法自增实现原理一样。
+     9.ThreadLocal 原理总结
+         9.1 什么是 ThreadLocal
+             ThreadLocal 提供了线程内部的局部变量，当在多线程环境中使用 ThreadLocal 维护变量时，会为每个线程生成该变量的副本，每个线程只操作自己线程中的变量副本，不同线程间的数据相互隔离、互不影响，从而保证了线程的安全。
+             ThreadLocal 适用于无状态，副本变量独立后不影响业务逻辑的高并发场景，如果业务逻辑强依赖于变量副本，则不适合用 ThreadLocal 解决，需要另寻解决方案。
+         9.2 ThreadLocal 的数据结构
+             在 JDK8 中，每个线程 Thread 内部都维护了一个 ThreadLocalMap 的数据结构，ThreadLocalMap 中有一个由内部类 Entry 组成的 table 数组，Entry 的 key 就是线程的本地化对象 ThreadLocal，而 value 则存放了当前线程所操作
+             的变量副本。每个 ThreadLocal 只能保存一个副本 value，并且各个线程的数据互不干扰，如果想要一个线程保存多个副本变量，就需要创建多个ThreadLocal。
+         9.3 ThreadLocal 的核心方法
+             ThreadLocal 对外暴露的方法有4个：
+                 initialValue()方法：返回为当前线程初始副本变量值。
+                 get()方法：获取当前线程的副本变量值。
+                 set()方法：保存当前线程的副本变量值。
+                 remove()方法：移除当前前程的副本变量值
+         9.4 ThreadLocal 的哈希冲突的解决方法：线性探测
      */
+
 }
 
 
