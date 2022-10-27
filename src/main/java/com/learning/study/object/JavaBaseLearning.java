@@ -1,8 +1,11 @@
 package com.learning.study.object;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * https://blog.csdn.net/a745233700/category_9280527.html java基础篇
  */
+@Slf4j
 public class JavaBaseLearning {
     /**
      1.final，finally和finalize的区别
@@ -450,8 +453,57 @@ public class JavaBaseLearning {
                  set()方法：保存当前线程的副本变量值。
                  remove()方法：移除当前前程的副本变量值
          9.4 ThreadLocal 的哈希冲突的解决方法：线性探测
+             和 HashMap 不同，ThreadLocalMap 结构中没有 next 引用，也就是说 ThreadLocalMap 中解决哈希冲突的方式并非链表的方式，而是采用线性探测的方式，当发生哈希冲突时就将步长加1或减1，寻找下一个相邻的位置。
+         9.5 ThreadLocal 的内存泄露
+             在使用 ThreadLocal 时，当使用完变量后，必须手动调用 remove() 方法删除 entry 对象，否则会造成 value 的内存泄露，严格来说，ThreadLocal 是没有内存泄漏问题，有的话，那也是忘记执行 remove() 引起的，这是使用不规范导致的。
+             不过有些人认为 ThreadLocal 的内存泄漏是跟 Entry 中使用弱引用 key 有关，这个结论是不对的。ThreadLocal 造成内存泄露的根本原因并不是 key 使用弱引用，因为即使 key 使用强引用，也会造成 Entry 对象的内存泄露，内存泄露的根
+             本原因在于 ThreadLocalMap 的生命周期与当前线程 CurrentThread 的生命周期相同，且 ThreadLocal 使用完没有进行手动删除导致的。下面我们就针对两种情况进行分析：
+            9.5.1 如果 key 使用强引用
+                 如果在业务代码中使用完 ThreadLocal，则此时 Stack 中的 ThreadLocalRef 就会被回收了。
+                 但是此时 ThreadLocalMap 中的 Entry 中的 Key 是强引用 ThreadLocal 的，会造成 ThreadLocal 实例无法回收。
+                 如果我们没有删除 Entry 并且 CurrentThread 依然运行的情况下，强引用链如下图红色，会导致Entry内存泄漏。
+                 所以结论就是：强引用无法避免内存泄漏。
+            9.5.2 如果 key 使用弱引用
+                 如果在业务代码中使用完 ThreadLocal，则此时 Stack 中的 ThreadLocalRef 就会被回收了。
+                 但是此时 ThreadLocalMap 中的 Entry 中的 Key 是弱引用 ThreadLocal 的，会造成 ThreadLocal 实例被回收，此时 Entry 中的 key = null。
+                 但是当我们没有手动删除 Entry 以及 CurrentThread 依然运行的时候，还是存在强引用链，但因为 ThreadLocalRef 已经被回收了，那么此时的 value 就无法访问到了，导致value内存泄漏
+                 所以结论就是：弱引用也无法避免内存泄漏
+            9.5.3 内存泄露的原因：
+                 从上面的分析知道内存泄漏跟强弱引用无关，内存泄漏的前提有两个：
+                     (1)ThreadLocalRef 用完后 Entry 没有手动删除。
+                     (2)ThreadLocalRef 用完后 CurrentThread 依然在运行。
+                 第一点表明当我们在使用完 ThreadLocal 后，调用其对应的 remove() 方法删除对应的 Entry 就可以避免内存泄漏
+                 第二点是由于 ThreadLocalMap 是 CurrentThread 的一个属性，被当前线程引用，生命周期跟 CurrentThread 一样，如果当前线程结束 ThreadLocalMap 被回收，自然里面的 Entry 也被回收了，但问题是此时的线程不一定会被回收，比如线程是从线程池中获取的，用完后就放回池子里了
+                 所以，我们可以得出在这小节开头的结论：ThreadLocal 内存泄漏根源是 ThreadLocalMap 的生命周期跟 Thread 一样，如果用完 ThreadLocal 没有手动删除就会内存泄漏。
+            9.5.4 为什么使用弱引用：
+                 前面讲到 ThreadLocal 的内存泄露与强弱引用无关，那么为什么还要用弱引用呢？
+                 （1）Entry 中的 key（Threadlocal）是弱引用，目的是将 ThreadLocal 对象的生命周期跟线程周期解绑，用 WeakReference 弱引用关联的对象，只能生存到下一次垃圾回收之前，GC发生时，不管内存够不够，都会被回收。
+                 （2）当我们使用完 ThreadLocal，而 Thread 仍然运行时，即使忘记调用 remove() 方法， 弱引用也会比强引用多一层保障：当 GC 发生时，弱引用的 ThreadLocal 被收回，那么 key 就为 null 了。而 ThreadLocalMap 中的 set()、get() 方法，
+                     会针对 key == null (也就是 ThreadLocal 为 null) 的情况进行处理，如果 key == null，则系统认为 value 也应该是无效了应该设置为 null，也就是说对应的 value 会在下次调用 ThreadLocal 的 set()、get() 方法时，执行底层 ThreadLocalMap
+                     中的 expungeStaleEntry() 方法进行清除无用的 value，从而避免内存泄露。
+         9.6 ThreadLocal 的应用场景：
+             （1）Hibernate 的 session 获取：每个线程访问数据库都应当是一个独立的 session 会话，如果多个线程共享同一个 session 会话，有可能其他线程关闭连接了，当前线程再执行提交时就会出现会话已关闭的异常，导致系统异常。使用 ThreadLocal 的方式能避免线程争抢session，提高并发安全性。
+             （2）Spring 的事务管理：事务需要保证一组操作同时成功或失败，意味着一个事务的所有操作需要在同一个数据库连接上，Spring 采用 Threadlocal 的方式，来保证单个线程中的数据库操作使用的是同一个数据库连接，同时采用这种方式可以使业务层使用事务时不需要感知并管理 connection 对象，
+                 通过传播级别，巧妙地管理多个事务配置之间的切换，挂起和恢复。
+         9.7 如果想共享线程的 ThreadLocal 数据怎么办 ？
+             使用 InheritableThreadLocal 可以实现多个线程访问 ThreadLocal 的值，我们在主线程中创建一个 InheritableThreadLocal 的实例，然后在子线程中得到这个InheritableThreadLocal实例设置的值。
      */
-
+    private void test() {
+        final ThreadLocal threadLocal = new InheritableThreadLocal();
+        threadLocal.set("主线程的ThreadLocal的值");
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                log.info( "我是子线程，我要获取其他线程的ThreadLocal的值 ==> " + threadLocal.get());
+            }
+        };
+        t.start();
+    }
+    /**
+         9.8 为什么一般用 ThreadLocal 都要用 static?
+            ThreadLocal 能实现线程的数据隔离，不在于它自己本身，而在于 Thread 的 ThreadLocalMap，所以，ThreadLocal 可以只实例化一次，只分配一块存储空间就可以了，没有必要作为成员变量多次被初始化。
+     */
 }
 
 
