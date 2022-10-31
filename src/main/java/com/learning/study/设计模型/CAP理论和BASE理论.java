@@ -24,7 +24,7 @@ public class CAP理论和BASE理论 {
      *
      *      ZooKeeper 保证的是 CP。 任何时刻对 ZooKeeper 的读请求都能得到一致性的结果，但是， ZooKeeper 不保证每次请求的可用性比如在 Leader 选举过程中或者半数以上的机器不可用的时候服务就是不可用的。
      *      Eureka 保证的则是 AP。 Eureka 在设计的时候就是优先保证 A （可用性）。在 Eureka 中不存在什么 Leader 节点，每个节点都是一样的、平等的。因此 Eureka 不会像 ZooKeeper 那样出现选举过程中或者半数以上的机器不可用的时候服务就是不可用的情况。 Eureka 保证即使大部分节点挂掉也不会影响正常提供服务，只要有一个节点是可用的就行了。只不过这个节点上的数据可能并不是最新的。
-     *      Nacos 不仅支持 CP 也支持 AP。
+     *      Nacos 不仅支持 CP 也支持 AP。(默认AP)
      *
      * 总结:
      *      CAP 是分布式系统设计理论，BASE 是 CAP 理论中 AP 方案的延伸，ACID 是数据库事务完整性的理论。

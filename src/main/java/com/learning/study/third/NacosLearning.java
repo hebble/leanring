@@ -32,6 +32,8 @@ public class NacosLearning {
      *          我们的服务一般会先从内存中读取配置信息，同时我们的微服务还可以定时向nacos配置中心发请求拉取(pull)更新的配置信息
      *       微服务应用中客户端如何感知配置中心的数据变化？
      *          1.4.x版本以后nacos客户端会基于长轮询机制从nacos获取配置信息，所谓的长轮询就是没有配置更新时，会在nacos服务端的队列进行等待
+     *       默认是AP还是CP?如果切换成CP
+     *          默认是AP, 切换CP只需执行命令: curl -X PUT '$NACOS_SERVER:8848/nacos/v1/ns/operator/switches?entry=serverMode&value=CP'
      *
      */
 }
