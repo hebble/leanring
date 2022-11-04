@@ -87,3 +87,11 @@ rm -rf /home/ubuntu/temp/gather-crawler-0.0.1-SNAPSHOT.jar
 jinfo -flags pid (jinfo flags pid在高版本才能正常使用，我在jdk1.8这个版本不能正常使用)
 jinfo -flag MaxHeapSize pid #查看最大堆内存
 jinfo -flag PrintGCDetails pid #查看是否打印GC日志
+
+##---------------------------vim后粘贴文本(对于格式问题)------------------------------------
+:set paste
+
+##---------------------------情况文件------------------------------------
+cat /dev/null > file_name
+echo "">file_name
+
