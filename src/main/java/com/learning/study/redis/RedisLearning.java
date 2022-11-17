@@ -1,6 +1,8 @@
 package com.learning.study.redis;
 
+import com.learning.study.test.User;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -208,6 +210,8 @@ public class RedisLearning {
      *          以mysql为例吧
      *              可以使用阿里的canal将binlog日志采集发送到MQ队列里面
      *              然后通过ACK机制确认处理这条更新消息，删除缓存，保证数据缓存一致性
+     *
+     *          springboot整合canal: https://blog.csdn.net/duxing_langzi/article/details/124349157
      */
 
     /**
@@ -230,6 +234,50 @@ public class RedisLearning {
      *          Redis开发者觉得失败的命令是由使用者编程错误造成的，而这些错误应该在开发的过程中被发现，而不应该出现在生产环境中
      *
      */
+    /**
+     15.布隆过滤器
+        15.1 什么是布隆过滤器?
+            布隆过滤器（Bloom Filter）是 1970 年由布隆提出的。它实际上是一个很长的二进制向量和一系列随机映射函数。布隆过滤器可以用于检索一个元素是否在一个集合中。它的优点是空间效率和查询时间都比一般的算法要好的多，缺点是有一定的误识别率和删除困难。
+        15.2 哈希函数
+            布隆过滤器离不开哈希函数，所以在这里有必要介绍下哈希函数的概念，哈希函数的性质:
+                 (1)经典的哈希函数都有无限大的输入值域(无穷大)。
+                 (2)经典的哈希函数的输出域都是固定的范围(有穷大，假设输出域为 S)。
+                 (3)当给哈希函数传入相同的值时，返回值必一样。
+                 (4)当给哈希函数传入不同的输入值时，返回值可能一样，也可能不一样。
+                 (5)输入值会尽可能均匀的分布在 S 上。
+            前三点都是哈希函数的基础，第四点描述了哈希函数存在哈希碰撞的现象，因为输入域无限大，输出域有穷大，这是必然的，输入域中会有不同的值对应到输入域 S 中。第五点事评价一个哈希函数优劣的关键，哈希函数越优秀，分布就越均匀且与输入值出现的规律无关。
+            比如存在 “hash1”,“hash2”,“hash3” 三个输入值比较类似，经过哈希函数计算后的结果应该相差非常大，可以通过常见的 MD5 和 SHA1 算法来验证这些特性。如果一个优秀的函数能够做到不同的输入值所得到的返回值可以均匀的分布在 S 中，将其返回值对 m 取余(%m)，
+            得到的返回值可以认为也会均匀的分布在 0~m-1 位置上。
+        15.3 布隆过滤器特点
+             因使用哈希判断，时间效率很高。空间效率也是其一大优势。
+             有误判的可能，需针对具体场景使用。
+             因为无法分辨哈希碰撞，所以不是很好做删除操作
+        15.4 使用场景
+         布隆过滤器的巨大用处就是，能够迅速判断一个元素是否在一个集合中。它的常用使用场景如下：
+             (1)黑名单 : 反垃圾邮件，从数十亿个垃圾邮件列表中判断某邮箱是否垃圾邮箱（同理，垃圾短信）
+             (2)URL去重 : 网页爬虫对 URL 的去重，避免爬取相同的 URL 地址
+             (3)单词拼写检查
+             (4)Key-Value 缓存系统的 Key 校验 (缓存穿透) : 缓存穿透，将所有可能存在的数据缓存放到布隆过滤器中，当黑客访问不存在的缓存时迅速返回避免缓存及 DB 挂掉。
+             (5)ID 校验，比如订单系统查询某个订单 ID 是否存在，如果不存在就直接返回。
+     */
+    public void test2(User user) {
+        RBloomFilter<String> bloomFilter
+                = redissonClient.getBloomFilter("REDISSON_BLOOMFILTER_USER");
+        //布隆过滤器计算的正确率为97%，初始化布隆过滤器容量为50000L
+        bloomFilter.tryInit(500000L,0.03);
+        if (bloomFilter.contains(user.getName())) {
+            log.warn("用户名:" + user.getName() + "已经存在");
+            return;
+        }
+        //业务处理
+//        user.setId(null);
+//        int res = userMapper.insertSelective(user);
+        int res = 1;
+        if (res > 0) {
+            //加入布隆过滤器
+            bloomFilter.add(user.getName());
+        }
+    }
 
 
 
