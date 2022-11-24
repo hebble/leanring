@@ -1,0 +1,65 @@
+version: '3'
+services:
+  redis:
+    image: redis:4.0.1
+    container_name: redis
+    restart: always
+    networks:
+      - mc
+    volumes:
+      - /data/redis/datadir:/data
+      - /data/redis/conf/redis.conf:/usr/local/etc/redis/redis.conf
+      - /data/redis/logs:/logs
+    command: redis-server --requirepass Umisen@123
+    ports:
+      - 6379:6379
+  mysql:
+    restart: always
+    image: mysql:5.7.18
+    container_name: mysql
+    volumes:
+      - /data/mysql/mydir:/mydir
+      - /data/mysql/datadir:/var/lib/mysql
+      - /data/mysql/conf/my.cnf:/etc/my.cnf
+      - /data/mysql/source:/docker-entrypoint-initdb.d
+    environment:
+      - "MYSQL_ROOT_PASSWORD=c875a84e59be11edb553991aae07b5ff"
+      - "TZ=Asia/Shanghai"
+    networks:
+      - mc
+    ports:
+      - 3306:3306
+  rabbitmq:
+    image: rabbitmq:3.9.7-management
+    container_name: rabbitmq
+    build: .
+    networks:
+      - mc
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=5cedf09c59c111ed8eebe3c099f8261e
+    volumes:
+      - /data/RabbitmqVol:/var/lib/rabbitmq
+    restart: always
+  nacos:
+    image: nacos/nacos-server:latest
+    container_name: nacos-standalone
+    environment:
+      - "MODE=standalone"
+    volumes:
+      - /data/nacos/logs/:/home/nacos/logs
+    networks:
+      - mc
+    ports:
+      - 8848:8848
+    restart: always
+networks:
+  mc:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      - subnet: 172.30.0.1/24
