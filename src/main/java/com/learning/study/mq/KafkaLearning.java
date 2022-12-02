@@ -349,7 +349,23 @@ public class KafkaLearning {
 
      32.Kafka数据保存时间
          Kafka具有存储功能，默认保存数据时间为7天或者大小1G，也就是说kafka broker上的数据超7天或者1G，就会被清理掉。这些数据存放在broker服务器上，以log文件的形式存在。
+
+     33.kafka 多环境推送和监听 http://www.lanxinbase.com/?p=1811
+        核心代码:
+         @Bean(initMethod = "doStart")
+             public KafkaMessageListenerContainer kafkaMessageListenerContainerOfOther(){
+             KafkaMessageListenerContainer container = new KafkaMessageListenerContainer(defaultKafkaConsumerFactory(),containerPropertiesOfOther());
+             return container;
+         }
+
+         @Bean
+         public ContainerProperties containerPropertiesOfOther(){
+             ContainerProperties properties = new ContainerProperties(ConstantKafka.KAFKA_TOPIC2);
+             properties.setMessageListener(kafkaConsumerMessageListener());
+             return properties;
+         }
      */
+
 }
 
 

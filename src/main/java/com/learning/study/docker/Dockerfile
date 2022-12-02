@@ -1,5 +1,6 @@
  FROM java:8
 
+ #作者信息
  MAINTAINER CBA "000@000.com"
 
  USER root

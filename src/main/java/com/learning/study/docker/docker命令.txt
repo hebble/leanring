@@ -1,0 +1,37 @@
+# docker compose 启动
+docker compose up
+
+#所有镜像和容器都删除的命令
+docker system prune -a
+
+#查看镜像
+docker images
+
+#删除单个镜像
+docker rmi -f  <镜像id>
+
+#删除所有镜像，不删除容器
+docker rmi $(docker images -q)
+
+删除容器
+首先需要停止所有的容器（只停止单个时把后面的变量改为image id即可）
+docker stop $(docker ps -a -q)
+
+删除所有的容器（只删除单个时把后面的变量改为image id即可）
+docker rm $(docker ps -a -q)
+
+#查看镜像
+docker images
+
+#删除镜像名称
+docker rmi 镜像ID
+
+#查看运行中的容器
+docker ps
+
+#查看所有容器
+docker ps -a
+
+#强制删除容器
+docker rm -f 容器ID
+

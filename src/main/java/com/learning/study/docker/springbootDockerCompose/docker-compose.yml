@@ -1,0 +1,20 @@
+#Docker Compose的版本
+version: '3.8'
+#配置我们自己的服务
+services:
+  #服务名称
+  testcompose:
+    #跟docker build命令一样，根据Dockerfile创建镜像,.表示当前目录
+    build: .
+    #服务的镜像名称
+    image: testcompose:0.1
+    #依赖关系:本项目需要redis先启动，项目后启动，所以这时候需要配置依赖关系，如下配置就是让redis服务先启动，然后后testcompose服务才启动
+    depends_on:
+      - redis
+    #当前服务对外暴露的端口
+    ports:
+      - "8080:8080"
+  #服务名称
+  redis:
+    #服务的镜像名称
+    image: "redis:alpine"
