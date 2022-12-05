@@ -3,6 +3,9 @@ netstat -tunlp
 ##-------------- 查看linux版本 --------------
 uname -a
 cat /proc/version
+##-------------- 查看linux cpu核数 --------------
+cat /proc/cpuinfo
+cat /proc/cpuinfo | grep 'cpu cores' | wc -l
 
 ##-------------- 修改文件所属账号 --------------
 chown -R root /temp/
