@@ -2,6 +2,7 @@ package com.learning.study.es;
 
 /**
  * https://blog.csdn.net/a745233700/article/details/115585342 ElasticSearch搜索引擎常见面试题总结
+ * https://blog.csdn.net/leveretz/article/details/128012607 es使用教程之_score(评分)介绍
  */
 public class ElasticSearchLearning {
     /**
@@ -213,6 +214,214 @@ public class ElasticSearchLearning {
              1、 空间占用小。通过对词典中单词前缀和后缀的重复利用，压缩了存储空间；
              2、 查询速度快。O(len(str))的查询时间复杂度。
 
+     10._score(评分)介绍 https://blog.csdn.net/leveretz/article/details/128012607
+        使用ES时，对于查询出的文档无疑会有文档相似度之别。而理想的排序是和查询条件相关性越高排序越靠前，而这个排序的依据就是_score
+        10.1 词频/逆向文档频率（TF/IDF）
+            当匹配到一组文档后，需要根据相关度排序这些文档，不是所有的文档都包含所有词，有些词比其他的词更重要。一个文档的相关度评分部分取决于每个查询词在文档中的 权重 。
+             (1)字段长度准则：这个准则很简单，字段内容的长度越长，相关性越低。我们在上面的两个例子中都能看到，同样包含了“He is”这个关键字，但是”He is passionate.”的相关性评分高于”He is a big data engineer.”，这就是因为字段长度准则影响了它们的相关性评分；
+             (2)检索词频率准则：检索关键字出现频率越高，相关性也越高。这个例子中没有比较明显的体现出来，你可以自己试验一下；
+             (3)逆向文档频率准则：每个检索关键字在Index中出现的频率越高，相关性越低。
+
+            10.1.1 词频
+                词在文档中出现的频度是多少？ 频度越高，权重 越高 。 5 次提到同一词的字段比只提到 1 次的更相关。词频的计算方式如下：
+                    tf(t in d) = √frequency      词 t 在文档 d 的词频（ tf ）是该词在文档中出现次数的平方根。
+                如果不在意词在某个字段中出现的频次，而只在意是否出现过，则可以在字段映射中禁用词频统计：
+                 PUT /my_index
+                 {
+                     "mappings": {
+                         "doc": {
+                             "properties": {
+                                 "text": {
+                                     "type": "string",
+                                     "index_options": "docs"
+                                 }
+                             }
+                         }
+                     }
+                 }
+                将参数 index_options 设置为 docs 可以禁用词频统计及词频位置，这个映射的字段不会计算词的出现次数，对于短语或近似查询也不可用。要求精确查询的 not_analyzed 字符串字段会默认使用该设置。
+            10.1.2 逆向文档频率
+                词在集合所有文档里出现的频率是多少？频次越高，权重 越低 。 常用词如 and 或 the 对相关度贡献很少，因为它们在多数文档中都会出现，一些不常见词如 elastic 或 hippopotamus 可以帮助我们
+                快速缩小范围找到感兴趣的文档。逆向文档频率的计算公式如下：
+                    idf(t) = 1 + log ( numDocs / (docFreq + 1))  词 t 的逆向文档频率（ idf ）是：索引中文档数量除以所有包含该词的文档数，然后求其对数
+            10.1.3 文档长度归一值
+                字段的长度是多少？ 字段越短，字段的权重 越高 。如果词出现在类似标题 title 这样的字段，要比它出现在内容 body 这样的字段中的相关度更高。字段长度的归一值公式如下：
+                    norm(d) = 1 / √numTerms  字段长度归一值（ norm ）是字段中词数平方根的倒数
+                字段长度的归一值对全文搜索非常重要， 许多其他字段不需要有归一值。无论文档是否包括这个字段，索引中每个文档的每个 string 字段都大约占用 1 个 byte 的空间。对于 not_analyzed 字符串字段的归一值默认是禁用的，而对于 analyzed 字段也可以通过修改字段映射禁用归一值：
+                     PUT /my_index
+                         {
+                             "mappings": {
+                                 "doc": {
+                                     "properties": {
+                                         "text": {
+                                             "type": "string",
+                                             "norms": { "enabled": false }
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                对于有些应用场景如日志，归一值不是很有用，要关心的只是字段是否包含特殊的错误码或者特定的浏览器唯一标识符。字段的长度对结果没有影响，禁用归一值可以节省大量内存空间。
+        10.2 文档评分计算
+            转自官方文档 Lucene的使用评分函数
+            评分计算公式
+                score(q,d)  =
+                    queryNorm(q)            //归一化因子
+                    · coord(q,d)              //协调因子
+                    · ∑ (
+                         tf(t in d)          //词频
+                         · idf(t)²             //逆向文档频率
+                         · t.getBoost()        //权重
+                         · norm(t,d)           //字段长度归一值
+                    ) (t in q)
+            下面简要介绍公式中新提及的三个参数，具体信息可以点击上方官方文档原文：
+                 queryNorm 查询归化因子：
+                    会被应用到每个文档，不能被更改，总而言之，可以被忽略。
+                 coord 协调因子：
+                    可以为那些查询词包含度高的文档提供奖励，文档里出现的查询词越多，它越有机会成为好的匹配结果。
+                    协调因子将评分与文档里匹配词的数量相乘，然后除以查询里所有词的数量，如果使用协调因子，评分会变成：
+                         文档里有 fox → 评分： 1.5 * 1 / 3 = 0.5
+                         文档里有 quick fox → 评分： 3.0 * 2 / 3 = 2.0
+                         文档里有 quick brown fox → 评分： 4.5 * 3 / 3 = 4.5
+                         协调因子能使包含所有三个词的文档比只包含两个词的文档评分要高出很多。
+                 Boost 权重：
+                    在查询中设置关键字的权重可以灵活的找到更匹配的文档。
+        10.3 实例测试
+             // 准备
+             PUT {{host}}:{{port}}/demo
+             {
+                 "mappings":{
+                     "article":{
+                         "properties":{
+                             "content":{
+                             "type":"text"
+                             }
+                         }
+                     }
+                 }
+             }
+             //导入数据
+             [
+                 {
+                    "content": "测试语句1"
+                 },
+                 {
+                    "content": "测试语句2"
+                 },
+                 {
+                    "content": "测试语句3，字段长度不同"
+                 }
+             ]
+             //查询
+             POST {{host}}:{{port}}/demo/article/_search
+             {
+                 "query":{
+                     "match":{
+                        "content":"测"
+                     }
+                 }
+             }
+             //测试结果：
+             {
+                 "took": 0,
+                 "timed_out": false,
+                 "_shards": {
+                     "total": 5,
+                     "successful": 5,
+                     "skipped": 0,
+                     "failed": 0
+                },
+                 "hits": {
+                     "total": 3,
+                     "max_score": 0.2824934,
+                     "hits": [
+                         {
+                             "_index": "demo",
+                             "_type": "article",
+                             "_id": "AWEIQ90700f4t28Wzjdj",
+                             "_score": 0.2824934,
+                             "_source": {
+                                "content": "测试语句2"
+                             }
+                         },
+                         {
+                             "_index": "demo",
+                             "_type": "article",
+                             "_id": "AWEIQ71f00f4t28WzjZT",
+                             "_score": 0.21247853,
+                             "_source": {
+                                "content": "测试语句1"
+                             }
+                         },
+                         {
+                             "_index": "demo",
+                             "_type": "article",
+                             "_id": "AWEIRAEw00f4t28Wzjkd",
+                             "_score": 0.1293895,
+                             "_source": {
+                                "content": "测试语句3，字段长度不同"
+                             }
+                         }
+                     ]
+                 }
+             }
+            奇怪的是，按照语句1和语句2的分数居然不同！因为他们两个文档的关键参数，词频，字段长度，逆向文档频率均相同，为什么算出来的分不同呢？
+            原因主要是因为 每个分片会根据 该分片内的所有文档计算一个本地 IDF 。而文档落在不同的分片就会导致逆向文档频率不同，算出来的分数也不同。
+            参见官网 被破坏的相关度
+            当文档数量比较大，分片分布均匀后，这个问题基本不会影响很大。那么在我们这个demo中使用添加 ?search_type=dfs_query_then_fetch来查询所有的idf。
+             POST {{host}}:{{port}}/demo/article/_search?search_type=dfs_query_then_fetch
+             {
+                 "query":{
+                     "match":{
+                        "content":"测"
+                     }
+                 }
+             }
+        10.4 其他更改评分的方法
+            由于其他几个方法官网介绍的比较详尽，所以这里就不多做介绍，直接贴上官网链接。而使用脚本评分，官网介绍有些细节不够完善，因此在此多加介绍：
+                 按受欢迎度提升权重
+                 过滤集提升权重
+                 随机评分
+                 越近越好
+                 脚本评分 ()
+            脚本评分主要应用在提供的评分满足不了需求，需要通过脚本自定义评分标准。比如虽然提供了前缀分词，但是前缀分词后，返回匹配的结果评分都是1，无法进一步区分。而我们可以通过脚本在使用tf/idf得出分数后，再加上前缀匹配后的额外分值，达到搜索和前缀匹配的目的。
+             那么在增加一组数据
+                 {
+                    "content":"语句测试4"
+                 }
+            从测试结果中看到，虽然语句4顺序不同，但是根据评分算法，依旧还是同分。
+            //添加脚本评分, 将前缀匹配得分为1, 否则为0 , 分数相加
+                 POST {{host}}:{{port}}/demo/article/_search?search_type=dfs_query_then_fetch
+                 {
+                     "query": {
+                         "function_score": {
+                             "query": {
+                                 "match": {
+                                    "content": "测"
+                                  }
+                             },
+                             "script_score": {
+                                 "script": {
+                                     "lang": "painless",
+                                     "source": "if(doc['content.keyword'].value.startsWith(params.keyword))return 1; return 0;",                 //此处更改为content.keyword
+                                     "params":{ "keyword":"测" }
+                                }
+                             },
+                             "boost_mode": "sum" //score_mode计算functions中的分数形式，加减乘除，boost_mode计算最外层的分数形式，加减乘除。所以最后总分是tf/idf分数加上脚本得分。
+                         }
+                     }
+                 }
+        10.5 painless
+             painless是一种新支持的脚本语言，语言格式和java十分类似。可以参考以下文档：
+                 painless语言介绍
+                 painless api
+                 painless 实例
+            score_mode计算functions中的分数形式，加减乘除，boost_mode计算最外层的分数形式，加减乘除。所以最后总分是tf/idf分数加上脚本得分。
+
+     11.match VS match_phrase
+        比如查询 He is
+            对于match的结果，我们可以可以看到，结果的Document中description这个field可以包含“He is”，“He”或者“is”
+            match_phrased的结果中的description字段，必须包含“He is”这一个词组
      */
 }
 

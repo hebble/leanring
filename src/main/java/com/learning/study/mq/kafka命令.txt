@@ -1,0 +1,18 @@
+find  /  -name kafka
+
+列出有哪些用户组来消费
+./kafka-consumer-groups.sh --bootstrap-server 10.230.200.101:9092 --list
+
+查看某个用户组的kafka消息消费情况，有没有数据积压
+./kafka-consumer-groups.sh --bootstrap-server 10.230.200.101:9092 --describe --group gather_data_complete_prod
+
+TOPIC                 PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
+这是你的topic消息队列id 0          138             189             51              -               -               -
+# CURRENT-OFFSET  这是当前已经消费了的偏移量
+# LAG  这是消息积压数量
+
+查看topic某分区数据偏移量(offset)最大值，就是看目前Kafka里有多少条消息
+./kafka-run-class.sh kafka.tools.GetOffsetShell --broker-list 10.230.200.101:9092 --topic globalLog-test --partitions 0
+
+查询topic
+./kafka-topics.sh --list --zookeeper 10.230.200.101:2181

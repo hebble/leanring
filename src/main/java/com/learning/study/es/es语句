@@ -80,6 +80,72 @@ POST gather_base_test_user/_update_by_query
   }
 }
 
+POST gather_base_post_test/_update_by_query
+{
+  "query": {
+    "term": {
+      "_id": {
+        "value": "b674be2a91c0f52e7c8092b27af89fd3"
+      }
+    }
+  },
+  "script":{
+    "source":"ctx._source.image=[params.image]",  //这里代表自己手动加的[], ctx._source.image=params.image这种params.image变成数组
+    "params":{
+      "image":
+        {
+          "upload" : 1,
+          "file_type" : "image",
+          "format" : "jpg",
+          "s3_url" : "https://data-tmp-1306241199.cos.ap-hongkong.myqcloud.com/c962837c608dd1d2cc7da2eec3abaa08",
+          "file_size" : 221022,
+          "origin_url":"https://test.com"
+        }
+
+    }
+  }
+}
+
+######################### 提升权重boost ########################
+GET gather_base_post_test/_search
+{
+  "sort": [
+    {
+      "_score": {
+        "order": "desc"
+      }
+    },
+    {
+      "create_date": {
+        "order": "desc"
+      }
+    }
+  ],
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "content": {
+              "query": "A former Miami congressman who signed a $50 million consulting contract with",
+              "operator": "and",
+              "boost": 2
+            }
+          }
+        },
+        {
+          "match": {
+            "translate_content": {
+              "query": "A former Miami congressman who signed a $50 million consulting contract with",
+              "operator": "and"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
 
 
 
