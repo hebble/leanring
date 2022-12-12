@@ -1,5 +1,8 @@
 package com.learning.study.third;
 
+/**
+ * https://blog.csdn.net/chuanchengdabing/article/details/119727185 Nginx高可用方案
+ */
 public class NginxLearning {
     /**
      1.什么是nginx？
@@ -194,9 +197,30 @@ public class NginxLearning {
                  5.如果该节点没有用户想要获取的内容，则通过内部路由访问上一节点，直到找到文件或到达源站为止。
                  6.CDN节点缓存该数据，下次请求该文件时可以直接返回。
 
-     19.keepalived
+     19.Nginx高可用方案keepalived https://blog.csdn.net/chuanchengdabing/article/details/119727185
          通过nginx代理服务器，可以对后端的具体应用实现反向代理或负载均衡等功能，并且nginx可以对应用进行健康检查，将故障节点从负载均衡池中排出，从而实现对后端应用的高可用性保障。
          但是，如果nginx服务器出现问题，则无法对外提供服务, 因此，我们要考虑到nginx服务的高可用性，采用主-备，或主-主的形式安装部署nginx服务，nginx的主备高可用性，依靠keepalived组件实现：
-
+        关键词:
+             KeepAlived（主服务器 和 备份服务器 故障时 IP 瞬间无缝交接）
+             VRRP协议（路由器组，提供虚拟IP，一个master和多个backup，组播消息，选举backup当master）
+             Nginx+keepalived 双机主主模式（俩公网虚拟IP，负载）；双机主从模式（热备服务器）
+        19.1 Nginx & KeepAlived
+             Nginx 进程基于Master+Slave(worker)多进程模型，自身具有非常稳定的子进程管理功能。在Master进程分配模式下，Master进程永远不进行业务处理，只是进行任务分发，从而达到Master进程的存活高可靠性，
+                Slave(worker)进程所有的业务信号都 由主进程发出，Slave(worker)进程所有的超时任务都会被Master中止，属于非阻塞式任务模型。
+             KeepAlived是Linux下面实现VRRP备份路由的高可靠性运行件。基于KeepAlived设计的服务模式能够真正做到主服务器和备份服务器故障时IP瞬间无缝交接。二者结合，可以构架出比较稳定的软件LB（Load Balance）方案。
+             KeepAlived的作用是检测服务器的状态，如果有一台web服务器宕机，或工作出现故障，KeepAlived将检测到，并将有故障的服务器从系统中剔除，同时使用其他服务器代替该服务器的工作，当服务器工作正常后KeepAlived
+                自动将服务器加入到服务器群中，这些工作全部自动完成，不需要人工干涉，需要人工做的只是修复故障的服务器。
+             KeepAlived是一个基于VRRP协议来实现的服务高可用方案，可以利用其来避免IP单点故障，类似的工具还有Heartbeat 、Corosync、Pacemaker。但是它一般不会单独出现，而是与其它负载均衡技术（如LVS、Haproxy、Nginx）一起工作来达到集群的高可用
+        19.2 VRRP协议
+            VRRP全称 Virtual Router Redundancy Protocol，即”虚拟路由冗余协议“。可以认为它是实现路由器高可用的容错协议，即将N台提供相同功能的路由器组成一个路由器组(Router Group)，这个组里面有一个master和多个backup，但在外界看来就像一台一样，
+            构成虚拟路由器，拥有一个虚拟IP（VIP - Virtual IP，也就是路由器所在局域网内其他机器的默认路由），占有这个IP的master实际负责ARP相应和转发IP数据包，组中的其它路由器作为备份的角色处于待命状态。master会发组播消息，当backup在超时时间
+            内收不到vrrp包时就认为master宕掉了，这时就需要根据VRRP的优先级来选举一个backup当master，保证路由器的高可用。
+        19.3 双机高可用解决方案
+            (1)Nginx+keepalived 双机主从模式:
+                即前端使用两台服务器，一台主服务器和一台热备服务器，正常情况下，主服务器绑定一个公网虚拟IP，提供负载均衡服务，热备服务器处于空闲状态；当主服务器发生故障时，热备服务器接管主服务器的公网虚拟IP，提供负载均衡服务；但是热备服务器在主机器不出现故障的时候，永远处于浪费状态，对于服务器不多的网站，该方案不经济实惠。
+            (2)Nginx+keepalived 双机主主模式:
+                即前端使用两台负载均衡服务器，互为主备，且都处于活动状态，同时各自绑定一个公网虚拟IP，提供负载均衡服务；当其中一台发生故障时，另一台接管发生故障服务器的公网虚拟IP（这时由非故障机器一台负担所有的请求）。
+        19.4 nginx+keepalived 主从, 双主配置
+            详见 http://t.zoukankan.com/dyh004-p-8407025.html
      */
 }
