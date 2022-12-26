@@ -287,6 +287,15 @@ public class JvmLearning {
              jinfo -flag MaxHeapSize pid #查看最大堆内存
              jinfo -flag PrintGCDetails pid #查看是否打印GC日志
 
+     18.jvm cpu使用率过高排查步骤
+        (1)使用top命令，查询资源占用情况
+            查出CPU使用率过高的java进程id
+        (2)使用top -H -p 进程id
+            查出该进程下CPU使用率过高的线程id
+        (3)​printf "%x\n" PID
+            将PID转为十六进制的TID, 我们之所以需要将PID转为十六进制是因为在堆栈信息中，PID是以十六进制形式存在的
+        (4)​jstack PID | grep TID -A 100​
+            查询堆栈信息
 
      */
 }
