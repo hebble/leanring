@@ -1,0 +1,11 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: study
+server:
+  port: 7040
+logging:
+  config: classpath:logback-${spring.profiles.active}-spring.xml
+knife4j:
+  enable: true
