@@ -71,7 +71,7 @@ POST _aliases
   ]
 }
 
-######################### 新增别名 #################################
+######################### 删除别名 #################################
 POST _aliases
 {
   "actions": [
@@ -83,6 +83,10 @@ POST _aliases
     }
   ]
 }
+
+######################### 查看指定索引开头的索引 #################################
+GET _cat/indices/gather_base_*_prod?v
+GET _cat/indices?v #所有索引
 
 ######################### 新增数据 #################################
 POST mytest/_doc
@@ -172,7 +176,149 @@ GET gather_base_post_test/_search
   }
 }
 
+######################### 聚合查询(多重聚合, 管道聚合(父管道)) ########################
+GET gather_base_test_post/_search
+{
+    "query": {
+      "bool": {
+        "must": [
+          {
+            "range": {
+              "db_time": {
+                "gte": 1648015200000,
+                "lt": 1648018800000
+              }
+            }
+          },
+          {
+            "range": {
+              "created_at": {
+                "gte": 1645596000000,
+                "lt": 1648018800000
+              }
+            }
+          },
+          {
+            "exists": {
+              "field": "tags"
+            }
+          }
+        ]
+      }
+    },
+    "size": 0,
+    "aggs": {
+      "platform": {
+        "terms": {
+          "field": "platform",
+          "size": 50
+        },
+        "aggs": {
+          "day_hour": {
+            "date_histogram": {
+              "field": "created_at",
+              "interval": "hour"
+            },
+            "aggs": {
+              "day_hour_count": {
+                "bucket_selector": {
+                  "buckets_path": {
+                    "view_count":"_count"
+                  },
+                  "script": "params.view_count > 0"
+                }
+              },
+              "tags": {
+                "terms": {
+                  "field": "tags",
+                  "size": 100
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+}
 
+######################### 聚合查询(多重聚合, 管道聚合(父管道)) ########################
+{
+  "from": 0,
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "snapshotTime": {
+              "from": 1668614400000,
+              "to": 1669975825019,
+              "include_lower": true,
+              "include_upper": true,
+              "boost": 1
+            }
+          }
+        }
+      ],
+      "adjust_pure_negative": true,
+      "boost": 1
+    }
+  },
+  "sort": [
+    {
+      "snapshotTime": {
+        "order": "desc"
+      }
+    }
+  ],
+  "track_total_hits": 2147483647,
+  "aggregations": {
+    "carPlateNumber": {
+      "terms": {
+        "field": "carPlateNumber",
+        "size": 2147483647,
+        "min_doc_count": 1,
+        "shard_min_doc_count": 0,
+        "show_term_doc_count_error": false,
+        "order": [
+          {
+            "_count": "desc"
+          },
+          {
+            "_key": "asc"
+          }
+        ]
+      },
+      "aggregations": {
+        "top_detail": {
+          "top_hits": {
+            "from": 0,
+            "size": 1,
+            "version": false,
+            "seq_no_primary_term": false,
+            "explain": false
+          }
+        },
+        "pv_count": {
+          "value_count": {
+            "field": "carPlateNumber"
+          }
+        },
+        "r_bucket_sort": {
+          "bucket_sort": {
+            "sort": {
+              "pv_count": {
+                "order": "desc"
+              }
+            },
+            "from": 10,
+            "size": 10
+          }
+        }
+      }
+    }
+  }
+}
 
 
 
