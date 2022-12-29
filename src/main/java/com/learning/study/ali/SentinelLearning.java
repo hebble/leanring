@@ -92,41 +92,43 @@ public class SentinelLearning {
             异常数 (DEGRADE_GRADE_EXCEPTION_COUNT)：当资源近 1 分钟的异常数目超过阈值之后会进行熔断。
 
      5.规则持久化
-         无论是通过硬编码的方式来更新规则，还是通过接入 Sentinel Dashboard 后，在页面上操作更新规则，都无法避免一个问题，那就是服务重启后，规则就丢失了，因为默认情况下规则是保存在内存中的。
-         我们在 Dashboard 上为客户端配置好了规则，并推送给了客户端。这时由于一些因素客户端出现异常，服务不可用了，当客户端恢复正常再次连接上 Dashboard 后，这时所有的规则都丢失了，我们还需要重新配置一遍规则，这肯定不是我们想要的。
-         持久化配置分以下3步：
-            (1)引入依赖
-                 <dependency>
-                     <groupId>com.alibaba.csp</groupId>
-                     <artifactId>sentinel-datasource-nacos</artifactId>
-                 </dependency>
-            (2)添加配置
-                 # 这里datasource后的consumer是数据源名称，可以随便写，推荐使用服务名
-                 spring.cloud.sentinel.datasource.consumer.nacos.server-addr=localhost:8848
-                 spring.cloud.sentinel.datasource.consumer.nacos.dataId=${spring.application.name}-sentinel-rules
-                 spring.cloud.sentinel.datasource.consumer.nacos.groupId=SENTINEL_GROUP
-                 spring.cloud.sentinel.datasource.consumer.nacos.data-type=json
-                 # 规则类型，取值见：org.springframework.cloud.alibaba.sentinel.datasource.RuleType
-                 spring.cloud.sentinel.datasource.consumer.nacos.rule_type=flow
-            (3)nacos中创建流控规则
-                 配置内容如下：
-                 [
-                     {
-                         "resource": "/hello",
-                         "limitApp": "default",
-                         "grade": 1,
-                         "count": 2,
-                         "strategy": 0,
-                         "controlBehavior": 0,
-                         "clusterMode": false
-                     }
-                 ]
-                 resource：资源名称
-                 limitApp：限流应用，就是用默认就可以
-                 grade：阈值类型，0表示线程数，1表示qps
-                 count：单机阈值
-                 strategy：流控模式，0-直接，1-关联， 2-链路
-                 controlBehavior：流控效果。0-快速失败，1-warm up 2-排队等待
-                 clusterMode：是否集群
+        目前 Sentinel 中默认实现了5种规则持久化的方式，分别是：file、redis、nacos、zk和apollo。
+        5.1 nacos方式持久化
+             无论是通过硬编码的方式来更新规则，还是通过接入 Sentinel Dashboard 后，在页面上操作更新规则，都无法避免一个问题，那就是服务重启后，规则就丢失了，因为默认情况下规则是保存在内存中的。
+             我们在 Dashboard 上为客户端配置好了规则，并推送给了客户端。这时由于一些因素客户端出现异常，服务不可用了，当客户端恢复正常再次连接上 Dashboard 后，这时所有的规则都丢失了，我们还需要重新配置一遍规则，这肯定不是我们想要的。
+             持久化配置分以下3步：
+                (1)引入依赖
+                     <dependency>
+                         <groupId>com.alibaba.csp</groupId>
+                         <artifactId>sentinel-datasource-nacos</artifactId>
+                     </dependency>
+                (2)添加配置
+                     # 这里datasource后的consumer是数据源名称，可以随便写，推荐使用服务名
+                     spring.cloud.sentinel.datasource.consumer.nacos.server-addr=localhost:8848
+                     spring.cloud.sentinel.datasource.consumer.nacos.dataId=${spring.application.name}-sentinel-rules
+                     spring.cloud.sentinel.datasource.consumer.nacos.groupId=SENTINEL_GROUP
+                     spring.cloud.sentinel.datasource.consumer.nacos.data-type=json
+                     # 规则类型，取值见：org.springframework.cloud.alibaba.sentinel.datasource.RuleType
+                     spring.cloud.sentinel.datasource.consumer.nacos.rule_type=flow
+                (3)nacos中创建流控规则
+                     配置内容如下：
+                     [
+                         {
+                             "resource": "/hello",
+                             "limitApp": "default",
+                             "grade": 1,
+                             "count": 2,
+                             "strategy": 0,
+                             "controlBehavior": 0,
+                             "clusterMode": false
+                         }
+                     ]
+                     resource：资源名称
+                     limitApp：限流应用，就是用默认就可以
+                     grade：阈值类型，0表示线程数，1表示qps
+                     count：单机阈值
+                     strategy：流控模式，0-直接，1-关联， 2-链路
+                     controlBehavior：流控效果。0-快速失败，1-warm up 2-排队等待
+                     clusterMode：是否集群
      */
 }
