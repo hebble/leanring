@@ -279,8 +279,89 @@ public class RedisLearning {
         }
     }
 
+    /**
+     16.redis发布订阅模式 https://blog.csdn.net/A_art_xiang/article/details/126786205
+        Redis 发布订阅 (pub/sub) 是一种消息通信模式：发送者 (pub) 发送消息，订阅者 (sub) 接收消息。
+        Redis 客户端可以订阅任意数量的频道。
+        16.1 发布订阅的使用
+            SUBSCRIBE命令
+                监听发布到给定通道的消息。
+                基本语法：
+                     SUBSCRIBE channel [channel ...]
+                     可以同时监听多个channel通道。
+            PUBLISH命令
+                将消息发布到一个通道。
+                基本语法：
+                    PUBLISH channel message
+            注意发布、订阅客户端启动顺序！
+                 当先启动订阅客户端，再启动发布客户端，然后发布客户端发布的消息，订阅客户端会正常受到。
+                 但是！当先启动发布客户端，然后发布客户端发布的消息，再启动订阅客户端，订阅客户端是不会受到消息的！此时消息会丢失。
+            总结
+                 redis的发布订阅功能，很多小伙伴都会用来做消息队列使用。
+                 但是该功能风险太大，很容易造成消息丢失，所以并不建议做消息队列使用。
+                 怎么说呢，redis的发布订阅功能，因为其消息丢失风险，所以大大减少了其使用场景，所以具体场景具体使用吧。
+        16.2 概念
+            频道:
+                频道（channel）类似于一个快递柜，快递员往里面放快递，收件人去里面取快递。管道（channel）是由中间件（redis）提供的，一个redisServer中有多个channel。
+            消息发布者:
+                可以理解为消息的生产者，消息发布者通过中间件（redis、mq等）向某个频道（管道）发送消息。
+            消息接收者:
+                也可以理解为消息消费者，消息接收者通过订阅某个频道（管道）来接收发布者发布的消息。
+        16.3 与springboot的整合(和mq类似) https://blog.csdn.net/congge_study/article/details/126686318
+            (1)自定义RedisSubConfig
+                 import org.springframework.context.annotation.Bean;
+                 import org.springframework.context.annotation.Configuration;
+                 import org.springframework.data.redis.connection.RedisConnectionFactory;
+                 import org.springframework.data.redis.listener.ChannelTopic;
+                 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
+                 @Configuration
+                 public class RedisSubConfig {
+                     @Bean
+                     public RedisMessageListenerContainer container(RedisConnectionFactory factory, RedisMessageListener listener) {
+                         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+                         container.setConnectionFactory(factory);
+                         //订阅频道redis.news 和 redis.life  这个container 可以添加多个 messageListener
+                         container.addMessageListener(listener, new ChannelTopic("redis.user"));
+                         //container.addMessageListener(listener, new ChannelTopic("redis.news"));
+                         return container;
+                    }
+                 }
+            (2)自定义消息监听器
+                 import org.springframework.beans.factory.annotation.Autowired;
+                 import org.springframework.data.redis.connection.Message;
+                 import org.springframework.data.redis.connection.MessageListener;
+                 import org.springframework.data.redis.core.RedisTemplate;
+                 import org.springframework.stereotype.Component;
 
+                 @Component
+                 public class RedisMessageListener implements MessageListener {
+                     @Autowired
+                     private RedisTemplate redisTemplate;
+
+                     @Override
+                     public void onMessage(Message message, byte[] pattern) {
+                         // 获取消息
+                         byte[] messageBody = message.getBody();
+                         // 使用值序列化器转换
+                         Object msg = redisTemplate.getValueSerializer().deserialize(messageBody);
+                         // 获取监听的频道
+                         byte[] channelByte = message.getChannel();
+                         // 使用字符串序列化器转换
+                         Object channel = redisTemplate.getStringSerializer().deserialize(channelByte);
+                         // 渠道名称转换
+                         String patternStr = new String(pattern);
+                         System.out.println(patternStr);
+                         System.out.println("---频道---: " + channel);
+                         System.out.println("---消息内容---: " + msg);
+                     }
+                 }
+            (3)redistemplate的序列化配置
+                省略
+            (4)发送消息
+                 redisTemplate.convertAndSend("redis.user", userId);
+
+     */
 
 
 
