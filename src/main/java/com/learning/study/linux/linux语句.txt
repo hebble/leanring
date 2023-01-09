@@ -20,7 +20,7 @@ curl -k --tlsv1 "https://8.215.78.132:60001/api_getphone"
 sudo apt-get install nginx -y
 
 ##-------------- 查看文件由大到小占用磁盘大小 --------------
-du -h --max-depth=1 (--max-depth=N 决定统计每个目录的深度)
+du -h --max-depth=1 | sort -hr (--max-depth=N 决定统计每个目录的深度)
 ##-------------- 算当前文件总大小 --------------
 du -sh
 ##-------------- 算当前文件下各文件大小 --------------
