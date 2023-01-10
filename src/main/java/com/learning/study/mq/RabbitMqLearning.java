@@ -288,6 +288,59 @@ public class RabbitMqLearning {
         （5）延迟队列：存储对应的延迟消息，当消息被发送以后，并不想让消费者立刻拿到消息，而是等待特定时间后，消费者才能拿到这个消息进行消费。在 RabbitMQ 中并不存在延迟队列，但我们可以通过设置消息的过期时间和死信队列来实现延迟队列，消费者监听死信交换器绑定的队列，而不要监听消息发送的队列。
         （6）优先级队列：优先级高的队列会先被消费，可以通过 x-max-priority 参数来实现。但是当消费速度大于生产速度且 Broker 没有堆积的情况下，优先级显得没有意义。
         （7）RabbitMQ 要求集群中至少有一个磁盘节点，其他节点可以是内存节点，当节点加入或离开集群时，必须要将该变更通知到至少一个磁盘节点。如果只有一个磁盘节点，刚好又是该节点崩溃了，那么集群可以继续路由消息，但不能创建队列、创建交换器、创建绑定、添加用户、更改权限、添加或删除集群节点。也就是说集群中的唯一磁盘节点崩溃的话，集群仍然可以运行，但直到该节点恢复前，无法更改任何东西。
+        (8)RabbitMQ是轮流发送消息给下一个消费者,平均每个消费者接收到的消息数量是相等的。这种分发消息的方式叫做循环分发
+
+     14.回调队列callback queue、关联标识correlation id、实现简单的RPC系统
+        14.1 回调队列（Callback queue）：
+            使用RabbitMQ来做RPC很容易。客户端发送一个请求消息，服务端以一个响应消息回应。为了可以接收到响应，需要与请求（消息）一起，发送一个回调的队列。我们使用默认的队列（Java独有的）：
+            callbackQueueName = channel.queueDeclare().getQueue();
+            BasicProperties props = new BasicProperties
+                .Builder()
+                .replyTo(callbackQueueName)
+                .build();
+            channel.basicPublish("", "rpc_queue", props, message.getBytes());
+            消息属性
+                AMQP 0-9-1协议预定义了消息的14种属性。大部分属性都很少用到，除了下面的几种：
+                    (1)deliveryMode：标记一个消息是持久的（值为2）还是短暂的（2以外的任何值），你可能还记得我们的第二个教程中用到过这个属性。
+                    (2)contentType：描述编码的mime-type（mime-type of the encoding）。比如最常使用JSON格式，就可以将该属性设置为application/json。
+                    (3)replyTo：通常用来命名一个回调队列。
+                    (4)correlationId：用来关联RPC的响应和请求。
+        14.2 关联标识（Correlation Id）
+            对每一个请求，我们都创建一个唯一性的值作为CorrelationId。之后，当我们从回调队列中收到消息的时候，就可以查找这个属性，基于这一点，我们就可以将一个响应和一个请求进行关联。如果我们看到一个不知道的 CorrelationId值，我们就可以安全地丢弃该消息，因为它不属于我们的请求。
+            你可能会问，为什么要忽视回调队列中的不知道的消息，而不是直接以一个错误失败（failing with an error）。这是由于服务端可能存在的竞争条件。尽管不会，但这种情况仍有可能发生：RPC服务端在发给我们答案之后就挂掉了，还没来得及为请求发送一个确认信息。如果发生这种情况，重启
+            后的RPC服务端将会重新处理该请求（因为没有给RabbitMQ发送确认消息，RabbitMQ会重新发送消息给RPC服务）。这就是为什么我们要在客户端优雅地处理重复响应，并且理想情况下，RPC服务要是幂等的。
+        14.3 服务端关键代码
+            channel.basicPublish("", properties.getReplyTo(), replyProps, response.getBytes("UTF-8"));  //从properties中获取回调队列
+            channel.basicAck(envelope.getDeliveryTag(), false);
+        14.4 客户端关键代码
+            public String call(String message) throws IOException, InterruptedException {
+                final String corrId = UUID.randomUUID().toString();
+                AMQP.BasicProperties props = new AMQP.BasicProperties
+                    .Builder()
+                    .correlationId(corrId)
+                    .replyTo(replyQueueName)
+                    .build();
+                channel.basicPublish("", requestQueueName, props, message.getBytes("UTF-8"));
+                final BlockingQueue<String> response = new ArrayBlockingQueue<String>(1);
+                channel.basicConsume(replyQueueName, true, new DefaultConsumer(channel) {
+                    @Override
+                        public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                        if (properties.getCorrelationId().equals(corrId)) {
+                            System.out.println("[client current time] : " + System.currentTimeMillis());
+                            response.offer(new String(body, "UTF-8"));
+                        }
+                    }
+                });
+                return response.take();
+            }
+            客户端代码看起来有一些复杂：
+                （1）建立连接和通道，并声明了一个独特的回调队列。
+                （2）订阅这个回调队列，所以我们可以接收RPC响应。
+                （3）call方法执行RPC请求。在call方法中，我们首先生成一个具有唯一性的correlationId值并存在变量corrId中。我们的DefaultConsumer中的实现方法handleDelivery会使用这个值来获取争取的响应。然后，我们发布了这个请求消息，并设置了replyTo和correlationId这两个属性。好了，现在我们可以坐下来耐心等待响应到来了。
+                （4）由于我们的消费者处理（指handleDelivery方法）是在子线程进行的，因此我们需要在响应到来之前暂停主线程（否则主线程结束了，子线程接收到了影响传给谁啊）。使用BlockingQueue是一种解决方案。在这里我们创建了一个阻塞队列ArrayBlockingQueue并将它的容量设为1，因为我们只需要接受一个响应就可以啦。handleDelivery方法所做的很简单，当有响应来的时候，就检查是不是和correlationId匹配，匹配的话就放到阻塞队列ArrayBlockingQueue中。
+                同时，主线程正等待影响。
+                （5）最终将影响返回给用户了。
+
      */
 
 }
