@@ -195,5 +195,76 @@ public class JUCLearning {
          　　(2)关于锁的释放：wait 会释放锁，sleep 睡觉了，抱着锁睡觉，不会释放！
          　　(3)使用位置不同：wait方法的执行必须在同步代码块中进行，而sleep则可以在任何位置　　
          　　(4)sleep方法短暂休眠之后会主动退出阻塞，而wait方法（没有指定等待的时间）则需要被其他线程中断后才能退出阻塞
+
+    5.阻塞队列ArrayBlockingQueue与LinkedBlockingQueue https://blog.csdn.net/a745233700/article/details/120691533
+        5.1 什么是阻塞队列 ?
+             阻塞队列最大的特性在于支持阻塞添加和阻塞删除方法：
+                 (1)阻塞添加：当阻塞队列已满时，队列会阻塞加入元素的线程，直到队列元素不满时才重新唤醒线程执行加入元素操作。
+                 (2)阻塞删除：但阻塞队列元素为空时，删除队列元素的线程将被阻塞，直到队列不为空再执行删除操作
+            Java 中的阻塞队列接口 BlockingQueue 继承自 Queue 接口，因此先来看看阻塞队列接口为我们提供的主要方法：
+                 public interface BlockingQueue<E> extends Queue<E> {
+                    // 将指定的元素插入到此队列的尾部（如果立即可行且不会超过该队列的容量）
+                    // 在成功时返回 true，如果此队列已满，则抛IllegalStateException。
+                    boolean add(E e);
+
+                    // 将指定的元素插入到此队列的尾部（如果立即可行且不会超过该队列的容量）
+                    // 如果该队列已满，则在到达指定的等待时间之前等待可用的空间,该方法可中断
+                    boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException;
+
+                    //将指定的元素插入此队列的尾部，如果该队列已满，则一直等到（阻塞）。
+                    void put(E e) throws InterruptedException;
+
+                    //获取并移除此队列的头部，如果没有元素则等待（阻塞），直到有元素将唤醒等待线程执行该操作
+                    E take() throws InterruptedException;
+
+                    //获取并移除此队列的头部，在指定的等待时间前一直等到获取元素， //超过时间方法将结束
+                    E poll(long timeout, TimeUnit unit) throws InterruptedException;
+
+                    //从此队列中移除指定元素的单个实例（如果存在）。
+                    boolean remove(Object o);
+                }
+                //除了上述方法还有继承自Queue接口的方法
+                //获取但不移除此队列的头元素,没有则跑异常NoSuchElementException
+                E element();
+
+                //获取但不移除此队列的头；如果此队列为空，则返回 null。
+                E peek();
+
+                //获取并移除此队列的头，如果此队列为空，则返回 null。
+                E poll();
+            这里我们把上述操作进行分类：
+                （1）插入方法：
+                     add(E e)：添加成功返回 true，失败抛 IllegalStateException 异常
+                     offer(E e)：成功返回 true，如果此队列已满，则返回 false
+                     put(E e)：将元素插入此队列的尾部，如果该队列已满，则一直阻塞
+                （2）删除方法
+                     remove(Object o)：移除指定元素,成功返回 true，失败返回 false
+                     poll()：获取并移除此队列的头元素，若队列为空，则返回 null
+                     take()：获取并移除此队列头元素，若没有元素则一直阻塞
+                （3）检查方法：
+                     element() ：获取但不移除此队列的头元素，没有元素则抛异常
+                     peek() :获取但不移除此队列的头；若队列为空，则返回 null
+        5.2 ArrayBlockingQueue
+            ArrayBlockingQueue 内部通过数组对象 items 来存储所有的数据，需要注意的是ArrayBlockingQueue 通过一个 ReentrantLock 来同时控制添加线程与移除线程的并发访问，这点与 LinkedBlockingQueue 区别很大
+            (稍后会分析)。而对于 notEmpty 条件对象则是用于存放等待或唤醒调用 take() 方法的线程，告诉他们队列已有元素，可以执行获取操作。同理 notFull 条件对象是用于等待或唤醒调用 put() 方法的线程，告诉它们
+            队列未满，可以执行添加元素的操作。takeIndex 代表的是下一个方法(take，poll，peek，remove)被调用时获取数组元素的索引，putIndex 则代表下一个方法（put, offer, or add）被调用时元素添加到数组中的索引。
+        5.3 LinkedBlockingQueue
+            每个添加到 LinkedBlockingQueue 队列中的数据都将被封装成 Node 节点，添加的链表队列中，其中 head 和 last 分别指向队列的头结点和尾结点。与 ArrayBlockingQueue 不同的是，LinkedBlockingQueue 内部
+            分别使用了 takeLock 和 putLock 对并发进行控制，也就是说，添加和删除操作并不是互斥操作，可以同时进行，可以大大提高吞吐量。这里再次强调如果没有给 LinkedBlockingQueue 指定容量大小，其默认值将是
+            Integer.MAX_VALUE，如果存在添加速度大于删除速度时候，有可能会内存溢出。至于 LinkedBlockingQueue 的实现原理图与 ArrayBlockingQueue 是类似的，除了对添加和移除方法使用单独的锁控制外，两者都使用了
+            不同的 Condition 条件对象作为等待队列，用于挂起 take 线程和 put 线程。
+        5.4 ArrayBlockingQueue 和 LinkedBlockingQueue 迥异
+            通过上述的分析，对于 ArrayBlockingQueue 和 LinkedBlockingQueue 的基本使用以及内部实现原理我们已较为熟悉了，这里我们就对它们两间的区别来个小结：
+                 （1）队列大小有所不同，ArrayBlockingQueue 是有界的初始化必须指定大小，而LinkedBlockingQueue 可以是有界的也可以是无界的(默认是 Integer.MAX_VALUE)，对于后者而言，当添加速度大于移除速度时，在无界的情况下，可能会造成内存溢出等问题
+                 （2）数据存储容器不同，ArrayBlockingQueue 采用的是数组作为数据存储容器，而LinkedBlockingQueue 采用的则是以 Node 节点作为连接对象的链表
+                 （3）创建与销毁对象的开销不同，ArrayBlockingQueue 采用数组作为存储容器，在插入或删除元素时不会产生或销毁任何额外的对象实例，而 LinkedBlockingQueue 则会生成一个额外的 Node 对象。在长时间内需要高效并发地处理大批量数据的时，对于GC可能存在较大影响。
+                 （4）队列添加或移除的锁不一样，ArrayBlockingQueue 的锁是没有分离的，添加操作和移除操作采用同一个 ReenterLock 锁，而 LinkedBlockingQueue 的锁是分离的，添加采用的是 putLock，移除采用的是 takeLock，这样能大大提高队列的吞吐量，
+                    也意味着在高并发的情况下生产者和消费者可以并行地操作队列中的数据，以此来提高整个队列的并发性能。
+        5.5 为什么juc中ArrayBlockingQueue用一个锁（两个condition），而LinkedBlockingQueue用两个锁（两个condition）实现。
+             LinkedBlockingQueue的较大一部分时间需要构造节点，导致较长的等待。所以同时存取有较大优化。
+             而ArrayBlockingQueue的不用构造节点，加锁和解锁的时间可能占比较大。
+             转成双锁之后，对比原来的存取操作，需要多竞争两次。一次是Atomic变量的cas操作，另一次是获得另一把锁的通知操作。可能这部分的损耗，已经比并发存取带来收益更大
      */
+
+
 }

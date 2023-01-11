@@ -331,16 +331,15 @@ public class RabbitMqLearning {
                         }
                     }
                 });
-                return response.take();
+                return response.take(); //take()：获取并移除此队列头元素，若没有元素则一直阻塞
             }
             客户端代码看起来有一些复杂：
                 （1）建立连接和通道，并声明了一个独特的回调队列。
                 （2）订阅这个回调队列，所以我们可以接收RPC响应。
                 （3）call方法执行RPC请求。在call方法中，我们首先生成一个具有唯一性的correlationId值并存在变量corrId中。我们的DefaultConsumer中的实现方法handleDelivery会使用这个值来获取争取的响应。然后，我们发布了这个请求消息，并设置了replyTo和correlationId这两个属性。好了，现在我们可以坐下来耐心等待响应到来了。
                 （4）由于我们的消费者处理（指handleDelivery方法）是在子线程进行的，因此我们需要在响应到来之前暂停主线程（否则主线程结束了，子线程接收到了影响传给谁啊）。使用BlockingQueue是一种解决方案。在这里我们创建了一个阻塞队列ArrayBlockingQueue并将它的容量设为1，因为我们只需要接受一个响应就可以啦。handleDelivery方法所做的很简单，当有响应来的时候，就检查是不是和correlationId匹配，匹配的话就放到阻塞队列ArrayBlockingQueue中。
-                同时，主线程正等待影响。
+                    同时，主线程正等待影响。
                 （5）最终将影响返回给用户了。
-
      */
 
 }
