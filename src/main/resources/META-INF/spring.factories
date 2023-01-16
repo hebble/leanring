@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.learning.study.test.config.Config2,\
+com.learning.study.test.config.Config1
