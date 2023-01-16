@@ -99,7 +99,6 @@ public class JavaBaseLearning {
             下面通过String类的hashCode()计算一组散列码：
                  public class HashCodeTest {
                      public static void main(String[] args) {
-                         int hash= 0;
                          String s= "ok";
                          StringBuilder sb = new StringBuilder(s);
 
