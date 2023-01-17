@@ -94,7 +94,14 @@ jinfo -flag PrintGCDetails pid #查看是否打印GC日志
 ##---------------------------vim后粘贴文本(对于格式问题)------------------------------------
 :set paste
 
-##---------------------------情况文件------------------------------------
+##---------------------------输入空文件------------------------------------
 cat /dev/null > file_name
 echo "">file_name
+
+##---------------------------定时任务------------------------------------
+crontab -e
+#开机自启动任务
+@reboot /bin/sh /home/user/sms-pool/sms-service/monitor.sh
+#每分钟执行一次start.sh脚本
+* * * * * /bin/sh /home/user/sms-pool/sms-service/monitor.sh
 
