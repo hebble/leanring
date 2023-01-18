@@ -12,5 +12,21 @@ public class MavenLearning {
          -rf	--resume-from 表示从指定模块开始继续处理
 
          mvn clean compile -pl common,gather-web -am
+
+     2.阿里maven仓库
+        如springboot构建很慢，或者打包的时候下载依赖很慢，可在pom文件中添加如下配置。可以加快构建速度如springboot构建很慢，或者打包的时候下载依赖很慢，可在pom文件中添加如下配置。可以加快构建速度
+            <repositories>
+                <repository>
+                    <id>alimaven</id>
+                    <url>https://maven.aliyun.com/repository/public</url>
+                </repository>
+            </repositories>
+
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>alimaven</id>
+                    <url>https://maven.aliyun.com/repository/public</url>
+                </pluginRepository>
+            </pluginRepositories>
      */
 }
