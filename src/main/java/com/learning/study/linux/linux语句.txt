@@ -13,8 +13,12 @@ chown -R root /temp/
 ##-------------- curl命令 --------------
 curl "http://172.17.102.104:8023/account/export/excel" -H "Content-Type: application/json" -H "permission-department:832" -d '{"account_ids":["08871c0f-26d1-48cf-86b5-21d43643e2a3"]}' -X POST
 curl http://localhost:9102/sms-service/test/testGetAllComPort
-curl -k --tlsv1 "https://117.139.166.242:60223/api_getphone" #https访问忽略证书
+#https访问忽略证书
+curl -k --tlsv1 "https://117.139.166.242:60223/api_getphone"
 curl -k --tlsv1 "https://8.215.78.132:60001/api_getphone"
+#上传文件
+touch a.txt
+curl -F "file=@a.txt" https://reqbin.com/echo/post/json
 
 ##-------------- 安转nginx --------------
 sudo apt-get install nginx -y

@@ -398,22 +398,22 @@ public class JUCLearning {
         public void test2() {
             Semaphore semaphore = new Semaphore(10);  //停车场同时容纳的车辆10
             //模拟100辆车进入停车场
-            for(int i=0;i<100;i++){
-                new Thread(() ->  {
+            for (int i = 0; i < 100; i++) {
+                new Thread(() -> {
                     try {
-                        System.out.println("===="+Thread.currentThread().getName()+"来到停车场");
-                        if(semaphore.availablePermits()==0){
+                        System.out.println("====" + Thread.currentThread().getName() + "来到停车场");
+                        if (semaphore.availablePermits() == 0) {
                             System.out.println("车位不足，请耐心等待");
                         }
                         semaphore.acquire();//获取令牌尝试进入停车场
-                        System.out.println(Thread.currentThread().getName()+"成功进入停车场");
+                        System.out.println(Thread.currentThread().getName() + "成功进入停车场");
                         Thread.sleep(new Random().nextInt(10000));//模拟车辆在停车场停留的时间
-                        System.out.println(Thread.currentThread().getName()+"驶出停车场");
+                        System.out.println(Thread.currentThread().getName() + "驶出停车场");
                         semaphore.release();//释放令牌，腾出停车场车位
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                },i+"号车").start();
+                }, i + "号车").start();
             }
         }
 
@@ -459,12 +459,13 @@ public class JUCLearning {
                 而偏向锁与轻量级锁不同，他们是通过 CAS 并配合 Mark Word 一起实现的。
                 7.2.1.1 synchronized 的 Mark word 标志位:
                     synchronized 使用的锁对象是存储在 Java 对象头里的，那么 Java 对象头是什么呢？对象实例分为：
-                         对象头
-                         Mark Word
-                         指向类的指针
-                         数组长度
-                         实例数据
-                         对齐填充
+                         (1)对象头
+                             Mark Word(hashcode、分代年龄、锁标记位)
+                             指向类的指针(元数据指针)
+                             数组长度(数组对象才有)
+                         (2)实例数据
+                         (3)对齐填充
+                    详见对象实例结构.png
                     其中，Mark Word 记录了对象的 hashcode、分代年龄、锁标记位相关的信息，由于对象头的信息是与对象自身定义的数据没有关系的额外存储成本，因此考虑到 JVM 的空间效率，Mark Word 被设计成为一个非固定的数据结构，以便存储
                     更多有效的数据，它会根据对象本身的状态复用自己的存储空间，在 32位 JVM 中的长度是 32 位，具体信息如下图所示：
                     详见Mark word数据结构.png
