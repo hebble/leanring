@@ -28,5 +28,8 @@ public class MavenLearning {
                     <url>https://maven.aliyun.com/repository/public</url>
                 </pluginRepository>
             </pluginRepositories>
+
+     3.查找maven仓库
+        https://mvnrepository.com/
      */
 }

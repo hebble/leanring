@@ -14,37 +14,40 @@ public class SpringLearning {
     2.Spring Bean的生命周期
        Spring启动，查找并加载需要被Spring管理的bean，进行Bean的实例化
        Bean实例化后对将Bean的引入和值注入到Bean的属性中
+
        如果Bean实现了BeanNameAware接口的话，Spring将Bean的Id传递给setBeanName()方法
        如果Bean实现了BeanFactoryAware接口的话，Spring将调用setBeanFactory()方法，将BeanFactory容器实例传入
        如果Bean实现了ApplicationContextAware接口的话，Spring将调用Bean的setApplicationContext()方法，将bean所在应用上下文引用传入进来。
+
        如果Bean实现了BeanPostProcessor接口，Spring就将调用他们的postProcessBeforeInitialization()方法。
        如果Bean 实现了InitializingBean接口，Spring将调用他们的afterPropertiesSet()方法。类似的，如果bean使用init-method声明了初始化方法，该方法也会被调用
        如果Bean 实现了BeanPostProcessor接口，Spring就将调用他们的postProcessAfterInitialization()方法。
+
        此时，Bean已经准备就绪，可以被应用程序使用了。他们将一直驻留在应用上下文中，直到应用上下文被销毁。
        如果bean实现了DisposableBean接口，Spring将调用它的destory()接口方法，同样，如果bean使用了destory-method 声明销毁方法，该方法也会被调用。
 
        总体的生命周期流程(记):
-           1.加载spring bean,bean实例化
-           2.bean的属性赋值
-           3.BeanNameAware.setBeanName()
-               4.BeanClassLoaderAware.setBeanClassLoader()
-           5.BeanFactoryAware.setBeanFactory()
-               6.EnvironmentAware.setEnvironment()
-               7.EmbeddedValueResolverAware.setEmbeddedValueResolver()
-               8.ResourceLoaderAware.setResourceLoader()
-               9.ApplicationEventPublisherAware.setApplicationEventPublisher()
-               10.MessageSourceAware.setMessageSource()
-           11.ApplicationContextAware.setApplicationContext()
-               12.ServletContextAware.setServletContext()
-           13.BeanPostProcessor.postProcessBeforeInitialization()
-           14.InitializingBean.afterPropertiesSet()
-           15.调用自定义初始化方法
-           16.BeanPostProcessor.postProcessAfterInitialization()
-           17.bean可以使用了
-           18.容器关闭
-           19.DisposableBean.dispose()
-           20.自定义销毁方法
-           21.结束
+           (1)加载spring bean,bean实例化
+           (2)bean的属性赋值
+           (3)BeanNameAware.setBeanName()
+               (4)BeanClassLoaderAware.setBeanClassLoader()
+           (5)BeanFactoryAware.setBeanFactory()
+               (6)EnvironmentAware.setEnvironment()
+               (7)EmbeddedValueResolverAware.setEmbeddedValueResolver()
+               (8)ResourceLoaderAware.setResourceLoader()
+               (9)ApplicationEventPublisherAware.setApplicationEventPublisher()
+               (10)MessageSourceAware.setMessageSource()
+           (11)ApplicationContextAware.setApplicationContext()
+               (12)ServletContextAware.setServletContext()
+           (13)BeanPostProcessor.postProcessBeforeInitialization()
+           (14)InitializingBean.afterPropertiesSet()
+           (15)调用自定义初始化方法
+           (16)BeanPostProcessor.postProcessAfterInitialization()
+           (17)bean可以使用了
+           (18)容器关闭
+           (19)DisposableBean.dispose()
+           (20)自定义销毁方法
+           (21)结束
 
     3.详细讲解一下核心容器（spring context应用上下文) 模块
        这是基本的 Spring 模块，提供 spring 框架的基础功能, BeanFactory 是任何以 spring 为基础的应用的核心.它使 Spring 成为一个容器 。BeanFactory是工厂模式的一个实现，提供了控制反转功能，用来把应用的配置和依赖从真正的应用代码中分离。
@@ -66,13 +69,13 @@ public class SpringLearning {
            （2）Spring AOP使用的动态代理，所谓的动态代理就是说AOP框架不会去修改字节码，而是每次运行时在内存中临时为方法生成一个AOP对象，这个AOP对象包含了目标对象的全部方法，并且在特定的切点做了增强处理，并回调原对象的方法。
 
        Spring AOP中的动态代理主要有两种方式，JDK动态代理和CGLIB动态代理：
-           1.JDK动态代理只提供接口的代理，不支持类的代理，要求被代理类实现接口。JDK动态代理的核心是InvocationHandler接口和Proxy类
+           (1)JDK动态代理只提供接口的代理，不支持类的代理，要求被代理类实现接口。JDK动态代理的核心是InvocationHandler接口和Proxy类
              在获取代理对象时，使用Proxy类来动态创建目标类的代理类（即最终真正的代理类，这个类继承自Proxy并实现了我们定义的接口），
              当代理对象调用真实对象的方法时， InvocationHandler 通过invoke()方法反射来调用目标类中的代码，动态地将横切逻辑和业务编织在一起；
-           2 如果被代理类没有实现接口，那么Spring AOP会选择使用CGLIB来动态代理目标类。CGLIB（Code Generation Library），是一个代码生成的类库，
-           可以在运行时动态的生成指定类的一个子类对象，并覆盖其中特定方法并添加增强代码，从而实现AOP。CGLIB是通过继承的方式做的动态代理，因此
-           如果某个类被标记为final，那么它是无法使用CGLIB做动态代理的。
-           3.区别：JDK代理只能对实现接口的类生成代理；CGlib是针对类实现代理，对指定的类生成一个子类，并覆盖其中的方法，这种通过继承类的实现方式，不能代理final修饰的类。
+           (2)如果被代理类没有实现接口，那么Spring AOP会选择使用CGLIB来动态代理目标类。CGLIB（Code Generation Library），是一个代码生成的类库，
+             可以在运行时动态的生成指定类的一个子类对象，并覆盖其中特定方法并添加增强代码，从而实现AOP。CGLIB是通过继承的方式做的动态代理，因此
+             如果某个类被标记为final，那么它是无法使用CGLIB做动态代理的。
+           (3)区别：JDK代理只能对实现接口的类生成代理；CGlib是针对类实现代理，对指定的类生成一个子类，并覆盖其中的方法，这种通过继承类的实现方式，不能代理final修饰的类。
 
        静态代理与动态代理区别:
            在于生成AOP代理对象的时机不同，相对来说AspectJ的静态代理方式具有更好的性能，但是AspectJ需要特定的编译器进行处理，而Spring AOP则无需特定的编译器处理
