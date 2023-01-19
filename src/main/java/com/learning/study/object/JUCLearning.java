@@ -576,5 +576,14 @@ public class JUCLearning {
                 (3)刷回主存，i = temp
             线程A: i=5->temp=6->i=temp=6
             线程B: i=5->temp=6,由于voliate,i=6->i=temp=6
+
+     11.实现多线程的四种方式
+        在 Java 中，实现多线程的主要有以下四种：
+             （1）继承 Thread 类，重写 run() 方法；
+             （2）实现 Runnable 接口，实现 run() 方法，并将 Runnable 实现类的实例作为 Thread 构造函数的参数 target；
+             （3）实现 Callable 接口，实现 call() 方法，然后通过 FutureTask 包装器来创建 Thread 线程；
+             （4）通过 ThreadPoolExecutor 创建线程池，并从线程池中获取线程用于执行任务；
+         第（1）（2）种方式无法获取线程的执行结果，因为通过重写的 run()  方法的返回值是void；第（3）种方式可以获取线程的执行结果，因为通过 Callable 接口的 call() 方法的返回值是 Object，
+        可以将返回的结果可以放在 Object 对象中；第（4）种方式对于两种情况都支持，具体取决于任务的类型，有返回值的任务必须实现 Callable 接口，无返回值的任务必须实现 Runnable 接口。
      */
 }
