@@ -1,4 +1,4 @@
-package com.learning.study.third;
+package com.learning.study.ali;
 
 public class NacosLearning {
     /**
