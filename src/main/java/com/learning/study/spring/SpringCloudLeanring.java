@@ -138,6 +138,7 @@ public class SpringCloudLeanring {
                 @Autowired
                 private List<RestTemplate> restTemplates = Collections.emptyList();
             也就是，所有加了@LoadBalanced注解的RestTemplate，会被注入到这个地方，在这个地方，实质上是进行了RestTemplate的自定义配置。
+
         4.5 ribbon的负载均衡策略
             默认的常见有随机规则,轮询规则,权重规则
             随机不用说，轮询也不用说，权重意思是,请求时间越久的server,其被分配给客户端使用的可能性就越低。
