@@ -161,7 +161,7 @@ public class KafkaLearning {
          数据传输的事务定义通常有以下三种级别：
              （1）最多一次: 消息不会被重复发送，最多被传输一次，但也有可能一次不传输
              （2）最少一次: 消息不会被漏发送，最少被传输一次，但也有可能被重复传输.
-             （3）精确的一次（Exactly once）: 不会漏传输也不会重复传输,每个消息都传输被
+             （3）精确的一次（Exactly once）: 不会漏传输也不会重复传输,每个消息都被传输
 
      12.Kafka 消费者是否可以消费指定分区消息？
          Kafa consumer消费消息时，向broker发出fetch请求去消费特定分区的消息，consumer指定消息在日志中的偏移量（offset），就可以消费从这个位置开始的消息，customer拥有了offset的控制权，可以向后回滚去重新消费之前的消息，这是很有意义的
@@ -180,10 +180,10 @@ public class KafkaLearning {
          快速的消费消息，但不幸的是，push模式下，当broker推送的速率远大于consumer消费的速率时，consumer恐怕就要崩溃了。最终Kafka还是选取了传统的pull模式。
          Pull模式的另外一个好处是consumer可以自主决定是否批量的从broker拉取数据。Push模式必须在不知道下游consumer消费能力和消费策略的情况下决定是立即推送每条消息还是缓存之后批量推送。如果为了避免consumer崩溃而采用较低的
          推送速率，将可能导致一次只推送较少的消息而造成浪费。Pull模式下，consumer就可以根据自己的消费能力去决定这些策略。
-         Pull有个缺点是，如果broker没有可供消费的消息，将导致consumer不断在循环中轮询，直到新消息到t达。为了避免这点，Kafka有个参数可以让consumer阻塞知道新消息到达(当然也可以阻塞知道消息的数量达到某个特定的量这样就可以批量发
+         Pull有个缺点是，如果broker没有可供消费的消息，将导致consumer不断在循环中轮询，直到新消息到达。为了避免这点，Kafka有个参数可以让consumer阻塞知道新消息到达(当然也可以阻塞知道消息的数量达到某个特定的量这样就可以批量发
 
      14.Kafka 高效文件存储设计特点
-         •Kafka把topic中一个parition大文件分成多个小文件段，通过多个小文件段，就容易定期清除或删除已经消费完文件，减少磁盘占用。
+         •Kafka把topic中一个parition大文件分成多个小文件段，通过多个小文件段，就容易定期清除或删除已经消费完文件，减少磁盘占用。(kafka默认的消息过期时间为168h(7天))
          •通过索引信息可以快速定位message和确定response的最大大小。
          •通过index元数据全部映射到memory，可以避免segment file的IO磁盘操作。
          •通过索引文件稀疏存储，可以大幅降低index文件元数据占用空间大小
@@ -211,7 +211,7 @@ public class KafkaLearning {
          第二步：leader开始分配消费方案，指明具体哪个consumer负责消费哪些topic的哪些partition。一旦完成分配，leader会将这个方案发给coordinator。coordinator接收到分配方案之后会把方案发给各个consumer，这样组内的所有成员就都知道自己应该消费哪些分区了。
          所以对于Rebalance来说，Coordinator起着至关重要的作用
 
-     18.consumer分区分配策略
+     18.consumer分区分配策略(默认 range)
          用过 Kafka 的同学用过都知道，每个 Topic 一般会有很多个 partitions。为了使得我们能够及时消费消息，我们也可能会启动多个 Consumer 去消费，而每个 Consumer 又会启动一个或多个streams去分别消费 Topic 里面的数据。我们又知道，Kafka 存在 Consumer Group 的概念，
          也就是 group.id 一样的 Consumer，这些 Consumer 属于同一个Consumer Group，组内的所有消费者协调在一起来消费订阅主题(subscribed topics)的所有分区(partition)。当然，每个分区只能由同一个消费组内的一个consumer来消费。那么问题来了，同一个 Consumer Group
          里面的 Consumer 是如何知道该消费哪些分区里面的数据呢？
@@ -221,7 +221,7 @@ public class KafkaLearning {
              (3)订阅的主题新增分区
          将分区的所有权从一个消费者移到另一个消费者称为重新平衡（rebalance），如何rebalance就涉及到本文提到的分区分配策略。下面我们将详细介绍 Kafka 内置的两种分区分配策略。
          本文假设我们有个名为 T1 的主题，其包含了10个分区，然后我们有两个消费者（C1，C2）来消费这10个分区里面的数据，而且 C1 的 num.streams = 1，C2 的 num.streams = 2。
-         18.1 Range strategy(范围分区)
+         18.1 Range strategy(范围分区)(默认分区分配策略)
              Range策略是对每个主题而言的，首先对同一个主题里面的分区按照序号进行排序，并对消费者按照字母顺序进行排序。在我们的例子里面，排完序的分区将会是0, 1, 2, 3, 4, 5, 6, 7, 8, 9；消费者线程排完序将会是C1-0, C2-0, C2-1。
              然后将partitions的个数除于消费者线程的总数来决定每个消费者线程消费几个分区。如果除不尽，那么前面几个消费者线程将会多消费一个分区。在我们的例子里面，我们有10个分区，3个消费者线程， 10 / 3 = 3，而且除不尽，那么消费
              者线程 C1-0 将会多消费一个分区，所以最后分区分配的结果看起来是这样的：
@@ -298,7 +298,7 @@ public class KafkaLearning {
                  Kafka可能存在多个生产者，会同时产生消息，但对Kafka来说，只需要保证每个生产者内部的消息幂等就可以了，所有引入了PID来标识不同的生产者。
 
                  对于Kafka来说，要解决的是生产者发送消息的幂等问题。也即需要区分每条消息是否重复。
-                 Kafka通过为每条消息增加一个Sequence Numbler，通过Sequence Numbler来区分每条消息。每条消息对应一个分区，不同的分区产生的消息不可能重复。所有Sequence Numbler对应每个分区
+                 Kafka通过为每条消息增加一个Sequence Numbler，通过Sequence Number来区分每条消息。每条消息对应一个分区，不同的分区产生的消息不可能重复。所有Sequence Numbler对应每个分区
 
                  Broker端在缓存中保存了这seq number，对于接收的每条消息，如果其序号比Broker缓存中序号大于1则接受它，否则将其丢弃。这样就可以实现了消息重复提交了。但是，只能保证单个Producer对于同一个<Topic, Partition>的Exactly Once语义。不能保证同一个Producer一个topic不同的partion幂等。
 
@@ -323,7 +323,7 @@ public class KafkaLearning {
          Zookeeper 主要用于在集群中不同节点之间进行通信，在 Kafka 中，它被用于提交偏移量，因此如果节点在任何情况下都失败了，它都可以从之前提交的偏移量中获取，除此之外，它还执行其他活动，
          如: leader 检测、分布式同步、配置管理、识别新节点何时离开或连接、集群、节点实时状态等等。
 
-     26.kafka判断一个节点还活着的有那两个条件？
+     26.kafka判断一个节点还活着的有哪两个条件？
          （1）节点必须维护和 ZooKeeper 的连接，Zookeeper 通过心跳机制检查每个节点的连接
          （2）如果节点是个 follower,他必须能及时的同步 leader 的写操作，延时不能太久
 
@@ -332,7 +332,7 @@ public class KafkaLearning {
          Kafka 分布式的单位是 partition，同一个 partition 用一个 write ahead log 组织，所以可以保证FIFO 的顺序。不同 partition 之间不能保证顺序。因此你可以指定 partition，将相应的消息发往同 1个 partition，并且在消费端，Kafka 保证1 个 partition 只能被1 个 consumer 消费，就可以实现这些消息的顺序消费。
          另外，你也可以指定 key（比如 order id），具有同 1 个 key 的所有消息，会发往同 1 个partition，那这样也实现了消息的顺序消息。
 
-     28.partition的数据文件（offffset，MessageSize，data）
+     28.partition的数据文件（offset，MessageSize，data）
          partition中的每条Message包含了以下三个属性： offset，MessageSize，data，其中offset表示Message在这个partition中的偏移量，offset不是该Message在partition数据文件中的实际存储位置，而是逻辑上一个值，它唯一确定了partition中的一条Message，可以认为offset是partition中Message的 id； MessageSize表示消息内容data的大小；data为Message的具体内容。
 
      29.kafka如何实现数据的高效读取？（顺序读写、分段命令、二分查找）
