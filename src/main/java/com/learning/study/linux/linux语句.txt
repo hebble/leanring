@@ -29,8 +29,12 @@ du -h --max-depth=1 | sort -hr (--max-depth=N 决定统计每个目录的深度)
 du -sh
 ##-------------- 算当前文件下各文件大小 --------------
 du -sh *
+
 ## -------------- 查找文件 --------------
 sudo find /usr -name "*osg*"
+
+## -------------- 查找压缩文件内容 --------------
+zgrep hello 1.txt
 
 ##-------------- 安装jdk --------------
 sudo apt-get install openjdk-8-jdk -y
@@ -99,7 +103,7 @@ jinfo -flag PrintGCDetails pid #查看是否打印GC日志
 :set paste
 
 ##---------------------------输入空文件------------------------------------
-cat /dev/null > file_name
+cat /dev/null > file_name   其中/dev/null为空设备
 echo "">file_name
 
 ##---------------------------定时任务------------------------------------
