@@ -6,7 +6,8 @@ package com.learning.study.third;
 public class TomcatLearning {
     /**
      1.Tomcat如何优化?你在项目中优化Tomcat解决什么问题?
-        对于tomcat的优化，主要是从2个方面入手，一是 tomcat 自身的配置，另一个是 tomcat 所运行的 jvm 的调优
+        对于tomcat的优化，主要是从2个方面入手，一是 tomcat 自身的配置(优化tomcat连接池, 使用nio2, 禁用ajp)，
+        另一个是 tomcat 所运行的 jvm 的调优
         1.1 优化tomcat连接池
             tomcat 中每一个用户请求都是一个线程，频繁地创建线程会造成性能浪费，所以可以使用线程池提高性能，修改 conf/server.xml 配置文件。
             参数说明：
