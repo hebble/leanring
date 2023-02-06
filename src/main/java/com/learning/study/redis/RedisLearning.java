@@ -344,6 +344,8 @@ public class RedisLearning {
 
      17.redis的网络模型
 
+     18.redis批处理（管道）
+         RedisTemplate.executePipelined
      */
 
 
