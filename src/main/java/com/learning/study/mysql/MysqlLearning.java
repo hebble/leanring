@@ -360,7 +360,7 @@ public class MysqlLearning {
            （4）type：访问类型，即MySQL决定如何查找表中的行。依次从好到差：
                system > const > eq_ref > ref > fulltext > ref_or_null > index_merge > unique_subquery > index_subquery > range > index > ALL，
                除了all之外，其他的 type 类型都可以使用到索引，除了 index_merge 之外，其他的type只可以用到一个索引。一般要求type为 ref 级别，范围查找需要达到 range 级别。
-               system：表中只有一条数据匹配（等于系统表），可以看成 const 类型的特例
+                   system：表中只有一条数据匹配（等于系统表），可以看成 const 类型的特例
                    const：通过索引一次就找到了，表示使用主键索引或者唯一索引
                    eq_ref：主键或者唯一索引中的字段被用于连接使用，只会返回一行匹配的数据
                    ref：普通索引扫描，可能返回多个符合查询条件的行。
@@ -397,7 +397,7 @@ public class MysqlLearning {
                （1）master服务器在执行SQL语句之后，记录在binlog二进制文件中；
                （2）slave端的IO线程连接上master端，并请求从指定bin log日志文件的指定pos节点位置（或者从最开始的日志）开始复制之后的日志内容。
                （3）master端在接收到来自slave端的IO线程请求后，通知负责复制进程的IO线程，根据slave端IO线程的请求信息，读取指定binlog日志指定pos节点位置之后的日志信息，然后返回给slave端的IO线程。该返回信息中除了binlog日志所包含的信息之外，还包括本次返回的信息在master端的binlog文件名以及在该binlog日志中的pos节点位置。
-               （4）slave端的IO线程在接收到master端IO返回的信息后，将接收到的binlog日志内容依次写入到slave端的relay log文件的最末端，并将读取到的master端的binlog文件名和pos节点位置记录到master-info文件中（该文件存slave端），以便在下一次同步的候能够告诉master从哪个位置开始进行数据同步；
+               （4）slave端的IO线程在接收到master端IO返回的信息后，将接收到的binlog日志内容依次写入到slave端的relay log文件的最末端，并将读取到的master端的binlog文件名和pos节点位置记录到master-info文件中（该文件存slave端），以便在下一次同步的时候能够告诉master从哪个位置开始进行数据同步；
                （5）slave端的SQL线程在检测到relay log文件中新增内容后，就马上解析该relay log文件中的内容，然后还原成在master端真实执行的那些SQL语句，再按顺序依次执行这些SQL语句，从而到达master端和slave端的数据一致性；
            21.3 主从复制的好处
                （1）读写分离，通过动态增加从服务器来提高数据库的性能，在主服务器上执行写入和更新，在从服务器上执行读功能。
@@ -409,11 +409,11 @@ public class MysqlLearning {
                    mysqld_safe –user=msyql –binlog-format=格式 &
                （1）基于语句的复制（Statement-Based）：在主服务器上执行的SQL语句，在从服务器上执行同样的语句。效率比较高。 一旦发现没法精确复制时，会自动选着基于行的复制。
                    优点：
-                       a.因为记录的SQL语句，所以占用更少的存储空间。binlog日志包含了描述数据库操作的事件，但这些事件包含的情况只是对数据库进行改变的操作，例如 insert、update、create、delete等操作。相反对于select、desc等类似的操作并不会去记录。
-                       b.binlog日志文件记录了所有的改变数据库的语句，所以此文件可以作为数据库的审核依据。
+                        a.因为记录的SQL语句，所以占用更少的存储空间。binlog日志包含了描述数据库操作的事件，但这些事件包含的情况只是对数据库进行改变的操作，例如 insert、update、create、delete等操作。相反对于select、desc等类似的操作并不会去记录。
+                        b.binlog日志文件记录了所有的改变数据库的语句，所以此文件可以作为数据库的审核依据。
                    缺点：
-                   a.不安全，不是所有的改变数据的语句都会被记录。对于非确定性的行为不会被记录。例如：对于 delete 或者 update 语句，如果使用了 limit 但是并没有 order by ，这就属于非确定性的语句，就不会被记录。
-                   b.对于没有索引条件的update，insert……select 语句，必须锁定更多的数据，降低了数据库的性能。
+                        a.不安全，不是所有的改变数据的语句都会被记录。对于非确定性的行为不会被记录。例如：对于 delete 或者 update 语句，如果使用了 limit 但是并没有 order by ，这就属于非确定性的语句，就不会被记录。
+                        b.对于没有索引条件的update，insert……select 语句，必须锁定更多的数据，降低了数据库的性能。
                （2）基于行的复制（Row-Based）：把改变的内容复制过去，而不是把命令在从服务器上执行一遍，从mysql5.0开始支持；
                    优点：
                        a.所有的改变都会被复制，这是最安全的复制方式；
@@ -423,6 +423,7 @@ public class MysqlLearning {
                        b.因为记录的是数据，所以说binlog日志文件占用的存储空间要比Statement-based大。
                        c.对于数据量大的操作其花费的时间有更长。
                （3）混合类型的复制：默认采用基于语句的复制，一旦发现基于语句的无法精确的复制时，就会采用基于行的复制
+
      22.读写分离
            实现原理:
                读写分离解决的是，数据库的写操作，影响了查询的效率，适用于读远大于写的场景。读写分离的实现基础是主从复制，主数据库利用主从复制将自身数据的改变同步到从数据库集群中，然后主数据库负责处理写操作
@@ -432,7 +433,7 @@ public class MysqlLearning {
                （2）主从只负责各自的写和读，极大程度的缓解X锁和S锁争用；
                （3）从库可配置MyISAM引擎，提升查询性能以及节约系统开销；
                （4）主从复制另外一大功能是增加冗余，提高可用性，当一台数据库服务器宕机后能通过调整另外一台从库来以最快的速度恢复服务。
-            Mysql读写分写的实现方式：
+           Mysql读写分写的实现方式：
                （1）基于程序代码内部实现：在代码中根据select 、insert进行路由分类。优点是性能较好，因为程序在代码中实现，不需要增加额外的硬件开支，缺点是需要开发人员来实现，运维人员无从下手。
                （2）基于中间代理层实现：代理一般介于应用服务器和数据库服务器之间，代理数据库服务器接收到应用服务器的请求后根据判断后转发到后端数据库，有以下代表性的代理层。
 
