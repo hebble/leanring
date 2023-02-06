@@ -35,3 +35,6 @@ SELECT * FROM food WHERE MATCH(flavor) AGAINST ('with hint' IN NATURAL LANGUAGE 
 布尔搜索使用特殊查询语言的规则解释搜索字符串。查询可以包含要搜索的词，以及修改搜索结果必须如何显示的特殊运算符；检查匹配行中是否必须存在或不存在单词的运算符，或确定给定单词的权重。
 我们BOOLEAN MODE在 MySQL 中使用来启用布尔全文搜索。特殊运算符位于单词的开头或结尾。前导+表示单词必须出现在行中，而前导-表示它不应该出现在行中。
 SELECT * FROM food WHERE  MATCH(chef) AGAINST ('+Chan -Julie' IN BOOLEAN MODE)
+
+添加前缀索引
+ALTER TABLE table_name ADD KEY(column_name(prefix_length));
