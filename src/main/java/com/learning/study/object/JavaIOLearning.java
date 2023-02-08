@@ -6,7 +6,7 @@ package com.learning.study.object;
 public class JavaIOLearning {
     /**
      1.Reactor 网络模型 https://blog.csdn.net/a745233700/article/details/122660246
-        1.1 什么是 Reactor 模型?
+        1.1 什么是 Reactor 模型? (非阻塞同步网络模型)
             Reactor 模式也叫做反应器设计模式，是一种为处理服务请求并发提交到一个或者多个服务处理器的事件设计模式。当请求抵达后，通过服务处理器将这些请求采用多路分离的方式分发给相应的请求处理器。
             Reactor 模式主要由 Reactor 和处理器 Handler 这两个核心部分组成，如下图所示，它俩负责的事情如下：
                  Reactor：负责监听和分发事件，事件类型包含连接事件、读写事件；
