@@ -343,6 +343,7 @@ public class RedisLearning {
                  redisTemplate.convertAndSend("redis.user", userId);
 
      17.redis的网络模型
+         单 Reactor 单线程模型
 
      18.redis批处理（管道）
          RedisTemplate.executePipelined

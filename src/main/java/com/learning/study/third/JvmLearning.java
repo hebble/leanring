@@ -11,7 +11,7 @@ public class JvmLearning {
      1.什么情况下会发生栈内存溢出？
          (1)栈是线程私有的，栈的生命周期和线程一样，每个方法在执行的时候就会创建一个栈帧，它包含局部变量表、操作数栈、动态链接、方法出口等信息，局部变量表又包括基本数据类型和对象的引用；
          (2)当线程请求的栈深度超过了虚拟机允许的最大深度时，会抛出StackOverFlowError异常，方法递归调用肯可能会出现该问题；
-         (3)调整参数-xss去调整jvm栈的大小
+         (3)调整参数-Xss去调整jvm栈的大小
 
      2.详解JVM内存模型？
         具体情况见图jvm内存模型.png
@@ -223,14 +223,14 @@ public class JvmLearning {
             -Dcom.sun.management.jmxremote.authenticate=false
             -Dcom.sun.management.jmxremote.ssl=false
          还可以设置虚拟机参数：
-            -Xms256m -Xmx512m -Xss256m -XX:PermSize=512m -XX:MaxPermSize=1024m
+            -Xms256m -Xmx512m -Xss256k -XX:PermSize=512m -XX:MaxPermSize=1024m
          jmx默认是通过localhost的ip地址提供RMI服务的，如果要明确指定RMI服务地址或主机名（比如主机有多个接口，想使用非hostname关联的接口），可以通过以下选项显式指定：
             -Djava.rmi.server.hostname=服务器IP
 
         这样开启jmx远程监控功能的最小配置具体如下：
              -Xms256m
              -Xmx512m
-             -Xss256m
+             -Xss256k
              -XX:PermSize=512m
              -XX:MaxPermSize=1024m
              -Dcom.sun.management.jmxremote

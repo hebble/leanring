@@ -288,7 +288,7 @@ public class JUCLearning {
                 任何线程占有共享资源的锁，当 state=1 时，则说明当前有线程正在使用共享变量，其他线程必须加入同步队列进行等待；
 
         6.2.AQS 的设计模式
-            6.2.1 QS 的模板方法模式
+            6.2.1 AQS 的模板方法模式
                 AQS 的基于模板方法模式设计的，在 AQS 抽象类中已经实现了线程在等待队列的维护方式（如获取资源失败入队/唤醒出队等），而对于具体共享资源 state 的获取与释放（也就是锁的获取和释放）则交由具体的同步器来实现
                 具体的同步器需要实现以下几种方法：
                      isHeldExclusively()：该线程是否正在独占资源，只有用到 condition 才需要去实现它
@@ -429,7 +429,7 @@ public class JUCLearning {
             7.1.2 synchronized 底层语义原理
                 synchronized 锁机制在 Java 虚拟机中的同步是基于进入和退出监视器锁对象 monitor 实现的（无论是显示同步还是隐式同步都是如此），每个对象的对象头都关联着一个 monitor 对象，当一个 monitor 被某个线程持有后，它便处于锁定状态。
                 在 HotSpot 虚拟机中，monitor 是由 ObjectMonitor 实现的，每个等待锁的线程都会被封装成 ObjectWaiter 对象，ObjectMonitor 中有两个集合，_WaitSet 和 _EntryList，用来保存 ObjectWaiter 对象列表 ，owner 区域指向持有
-                ObjectMonitor 对象的线程。当多个线程同时访问一段同步代码时，首先会进入 _EntryList 集合尝试获取 moniter，当线程获取到对象的 monitor 后进入 _Owner 区域并把 _owner 变量设置为当前线程，同时 monitor 中的计数器 count 加1；
+                ObjectMonitor 对象的线程。当多个线程同时访问一段同步代码时，首先会进入 _EntryList 集合尝试获取 monitor，当线程获取到对象的 monitor 后进入 _Owner 区域并把 _owner 变量设置为当前线程，同时 monitor 中的计数器 count 加1；
                 若线程调用 wait() 方法，将释放当前持有的 monitor，count自减1，owner 变量恢复为 null，同时该线程进入 _WaitSet 集合中等待被唤醒。若当前线程执行完毕也将释放 monitor 并复位变量的值，以便其他线程获取 monitor。
                      _EntryList：存储处于 Blocked 状态的 ObjectWaiter 对象列表。
                      _WaitSet：存储处于 wait 状态的 ObjectWaiter 对象列表。
@@ -508,7 +508,7 @@ public class JUCLearning {
                  （3）性能的区别：在 JDK6 以前，如果竞争资源不激烈，两者的性能是差不多的，而当竞争资源非常激烈时，此时 ReentrantLock 的性能要远远优于 synchronizsed。但是在 JDK6 及以后的版本，JVM 对 synchronized 进行了优化，所以两者的性能变得差不多了
                     总的来说，synchronizsed 和 ReentrantLock 都是可重入锁，在使用选择上需要根据具体场景而定，大部分情况下依然建议使用 synchronized 关键字，原因之一是使用方便语义清晰，二是性能上虚拟机已为我们自动优化。如果确实需要使用到 ReentrantLock
                     提供的多样化特性时，我们可以选择ReentrantLock
-            7.4.4  “可重入锁”概念
+            7.4.4 “可重入锁”概念
                 “可重入锁”概念是：自己可以再次获取自己的内部锁。比如一个线程获得了某个对象的锁，此时这个对象锁还没有释放，当其再次想要获取这个对象的锁的时候还是可以获取的，如果不可重入的话，就会造成死锁。同一个线程每次获取锁，锁的计数器都自增1，
                 所以要等到锁的计数器下降为0时才能释放锁。
         7.5 ReadWriteLock 读写锁
@@ -563,7 +563,7 @@ public class JUCLearning {
         10.1 voliate可见性底层实现原理
             实际上voliate的可见性实现借助了CPU的lock指令，即在写voliate变量的时候，在该指令前加一个lock指令，这个指令有两个作用：
                 (1)写volatile时处理器会将缓存写回到主内存。
-                (2)一个处理器的缓存写回到主内存会导致其他处理器的缓存失效。（即其他线程缓存该变量地址失效，下次读取时会自动从主存中读取
+                (2)一个处理器的缓存写回到主内存会导致其他处理器的缓存失效。（即其他线程缓存该变量地址失效，下次读取时会自动从主内存中读取
             注意：基于 CPU 缓存一致性协议，JVM 实现了 volatile 的可见性，但由于总线嗅探机制，会不断的监听总线，如果大量使用 volatile 会引起总线风暴。所以，volatile 的使用要适合具体场景。
         10.2 voliate有序性底层实现原理
             volatile有序性的保证就是通过禁止指令重排序来实现的。指令重排序包括编译器和处理器重排序，JMM会分别限制这两种指令重排序。
