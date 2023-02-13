@@ -604,6 +604,11 @@ public class MysqlLearning {
 
                 详细可见性算法见 https://baijiahao.baidu.com/s?id=1719749867568105953&wfr=spider&for=pc
 
+     33.mysql深度查询优化
+         (1)利用滚动查询，不让用户可以指定页数
+         (2)查询的时候可以利用某个排序自增，然后大于这个值（类似scrollid）
+         (3)先查询id，然后再用in id查询数据，避免回表操作
+
      */
 }
 

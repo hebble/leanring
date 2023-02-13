@@ -359,6 +359,31 @@ public class RedisLearning {
                  GETBIT：获取指定偏移量上二进制位的值。
                  BITCOUNT：统计位数组中值为1的二进制位数量。
                  BITOP：对多个位数组进行按位与、或、异或运算。
+
+     20.你知道有哪些Redis分区实现方案？
+         (1)客户端分区
+         (2)代理分区
+         (3)查询路由
+
+     21.redis通信协议
+         Redis 客户端 - 服务端通信协议称之为 RESP 协议，全称叫 Redis Serialization Protocol，即 redis 序列化协议。人类易读，相当精巧！
+         规范格式(redis-cli) RESP
+             (1)间隔符号，在Linux下是\r\n，在Windows下是\n
+             (2)简单字符串 Simple Strings, 以 "+"加号 开头
+             (3)错误 Errors, 以"-"减号 开头
+             (4)整数型 Integer， 以 ":" 冒号开头
+             (5)大字符串类型 Bulk Strings, 以 "$"美元符号开头，长度限制512M
+             (6)数组类型 Arrays，以 "*"星号开头
+
+     22.各类型存储大小
+         Strings类型：一个String类型的value最大可以存储512M
+         Lists类型：list的元素个数最多为2^32-1个，也就是4294967295个。
+         Sets类型：元素个数最多为2^32-1个，也就是4294967295个。
+         Hashes类型：键值对个数最多为2^32-1个，也就是4294967295个。
+         Sorted sets类型：跟Sets类型相似。
+
+     23.zset底层实现原理
+
      */
 
 
