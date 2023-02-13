@@ -216,6 +216,9 @@ public class SpringLearning {
            (2)A添加@Transactional(propagation = Propagation.REQUIRED)
              B添加@Transactional(propagation = Propagation.NESTED)
                如果B中有异常, B回滚, A捕捉了异常, A不会回滚
+       14.4 REQUIRED和NESTED的区别
+            REQUIRED中A->B, A捕捉了B的异常, try，catch了，则会抛出异常：Transaction rolled back because it has been marked as rollback-only 。 (事务只能回滚)
+            NESTED中A->B,  A捕捉了B的异常, try，catch了, 则不会抛出异常, A也不会回滚
        14.4 Spring中的隔离级别：
            (1)ISOLATION_DEFAULT：这是个 PlatfromTransactionManager 默认的隔离级别，使用数据库默认的事务隔离级别。
            (2)ISOLATION_READ_UNCOMMITTED：读未提交，允许事务在执行过程中，读取其他事务未提交的数据。这种隔离级别会产生脏读，不可重复读和幻像读
