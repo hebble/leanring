@@ -11,7 +11,7 @@ public class SpringbootLearning {
               –file:./
               –classpath:/config/
               –classpath:/
-        优先级由高到底，高优先级的配置会覆盖低优先级的配置。
+        优先级由高到底，高优先级的配置会覆盖低优先级的配置。使用cmd命令行指定特定的配置文件优化级最高
 
     2.Springboot 自动装配原理
         2.1 启动依赖介绍
@@ -20,7 +20,7 @@ public class SpringbootLearning {
            见到***-springboot-boot-starter：第三方为我们提供的简化开发的场景启动器
 
         2.2 自动装配原理
-            SpringBoot 定义了一套接口规范，这套规范规定：SpringBoot 在启动时会扫描外部引用 jar 包中的META-INF/spring.factories文件，将文件中配置的类型信息加载到 Spring 容器（此处涉及
+            SpringBoot 定义了一套接口规范，这套规范规定：SpringBoot 在启动时会扫描外部引用 jar 包中的META-INF/spring.factories文件，将文件中配置的类信息加载到 Spring 容器（此处涉及
             到 JVM 类加载机制与 Spring 的容器知识），并执行类中定义的各种操作。对于外部 jar 来说，只需要按照 SpringBoot 定义的标准，就能将自己的功能装置进 SpringBoot。
            @SpringBootApplication其实就是下面三个注解的集合
                @SpringBootConfiguration: SpringBoot就应该运行这个类的main方法来启动SpringBoot应用
@@ -50,19 +50,19 @@ public class SpringbootLearning {
     4.spring.factories中这么多配置，每次启动都要全部加载么？(按需加载)
         一遍筛选过滤，@ConditionalOnXXX 中的所有条件都满足，该类才会生效
         4.1 Spring Boot 提供的条件注解如下：
-             @ConditionalOnBean：当容器里有指定 Bean 的条件下
-             @ConditionalOnMissingBean：当容器里没有指定 Bean 的情况下
-             @ConditionalOnSingleCandidate：当指定 Bean 在容器中只有一个，或者虽然有多个但是指定首选 Bean
-             @ConditionalOnClass：当类路径下有指定类的条件下
-             @ConditionalOnMissingClass：当类路径下没有指定类的条件下
-             @ConditionalOnProperty：指定的属性是否有指定的值
-             @ConditionalOnResource：类路径是否有指定的值
-             @ConditionalOnExpression：基于 SpEL 表达式作为判断条件
-             @ConditionalOnJava：基于 Java 版本作为判断条件
-             @ConditionalOnJndi：在 JNDI 存在的条件下差在指定的位置
-             @ConditionalOnNotWebApplication：当前项目不是 Web 项目的条件下
-             @ConditionalOnWebApplication：当前项目是 Web 项 目的条件下
-         4.2 组合Conditional(使用SpEL表达式)
+             @ConditionalOnBean： 当容器里有指定 Bean 的条件下
+             @ConditionalOnMissingBean： 当容器里没有指定 Bean 的情况下
+             @ConditionalOnSingleCandidate： 当指定 Bean 在容器中只有一个，或者虽然有多个但是指定首选 Bean
+             @ConditionalOnClass： 当类路径下有指定类的条件下
+             @ConditionalOnMissingClass： 当类路径下没有指定类的条件下
+             @ConditionalOnProperty： 指定的属性是否有指定的值
+             @ConditionalOnResource： 类路径是否有指定的值
+             @ConditionalOnExpression： 基于 SpEL 表达式作为判断条件
+             @ConditionalOnJava： 基于 Java 版本作为判断条件
+             @ConditionalOnJndi： 在 JNDI 存在的条件下差在指定的位置
+             @ConditionalOnNotWebApplication： 当前项目不是 Web 项目的条件下
+             @ConditionalOnWebApplication： 当前项目是 Web 项 目的条件下
+        4.2 组合Conditional(使用SpEL表达式)
              介绍与、或、非
             @ConditionalOnExpression("'${spring.profiles.active:dev}' != 'dev'") //非
             @ConditionalOnExpression("'${crane.condition.a}' == 'a' and '${crane.condition.b}' == 'b'") //与
