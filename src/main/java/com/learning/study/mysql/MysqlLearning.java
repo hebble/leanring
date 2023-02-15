@@ -28,13 +28,13 @@ public class MysqlLearning {
                （1）首先MySQL执行器根据 执行计划 调用存储引擎的API查询数据
                （2）存储引擎先从缓存池buffer pool中查询数据，如果没有就会去磁盘中查询，如果查询到了就将其放到缓存池中
                （3）在数据加载到 Buffer Pool 的同时，会将这条数据的原始记录保存到 undo 日志文件中
-               （4）innodb 会在 Buffer Pool 中执行更新操作
+               （4）innodb 会在 Buffer Pool 中执行更新操作(buffer pool更新的数据叫脏页)
                （5）更新后的数据会记录在 redo log buffer 中
                （6）提交事务在提交的同时会做以下三件事
                （7）（第一件事）将redo log buffer中的数据刷入到redo log文件中
                （8）（第二件事）将本次操作记录写入到 bin log文件中
                （9）（第三件事）将bin log文件名字和更新内容在 bin log 中的位置记录到redo log中，同时在 redo log 最后添加 commit 标记
-               （10）使用一个后台线程，它会在某个时机将我们Buffer Pool中的更新后的数据刷到 MySQL 数据库中，这样就将内存和数据库的数据保持统一了
+               （10）使用一个后台线程，它会在某个时机将我们Buffer Pool中的更新后的数据刷到 MySQL 数据库中，这样就将内存和数据库的数据保持统一了(将buffer poll数据保存到磁盘叫刷脏)
            备注: buffer pool 和 查询缓存的区别：
                （1）查询缓存：查询缓存位于Server层，MySQL Server首选会从查询缓存中查看是否曾经执行过这个SQL，如果曾经执行过的话，之前执行的查询结果会以Key-Value的形式保存在查询缓存中。key是SQL语句，value是查询结果。我们将这个过程称为查询缓存！
                （2）Buffer Pool位于存储引擎层。Buffer Pool就是MySQL存储引擎为了加速数据的读取速度而设计的缓冲机制
