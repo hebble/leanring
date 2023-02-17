@@ -311,6 +311,14 @@ public class SpringLearning {
            （4）上下文关闭事件（ContextClosedEvent）：当ApplicationContext被关闭时触发该事件。容器被关闭时，其管理的所有单例Bean都被销毁。
            （5）请求处理事件（RequestHandledEvent）：在Web应用中，当一个http请求（request）结束触发该事件。
        如果一个bean实现了ApplicationListener接口，当一个ApplicationEvent 被发布以后，bean会自动被通知。
+
+    18.Spring定时任务
+        (1)Spring定时任务执行原理实际使用的是JDK自带的ScheduledExecutorService
+        (2)Spring默认使用单线程的线程池(线程池数量为1)去执行定时任务, 所以如果某个任务执行时间过长, 会导致其他定时任务阻塞无法执行
+        (3)可以开启并行调度, Springboot中的使用方式: 这种模式每次任务执行都会创建一个线程去执行
+            缺点: 如果某个定时任务出现死循环或者执行时间过长而触发间隔时间过短, 会导致线程数量不可控
+        (4)最稳妥的处理方式: 自定义任务执行的线程池
+
      */
 
 
