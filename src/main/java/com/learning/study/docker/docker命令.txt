@@ -41,3 +41,11 @@ docker exec -it 容器Name bash
 exit
 快捷键：Ctrl+P+Q
 
+#docker-compose指定文件
+-f：指定使用的compose模板文件，默认为当前目录下的docker-compose.yaml文件，可以多次指定。
+-p：指定项目的名称，默认将使用所在目录名称作为项目名。
+–verbose：输出更多调试信息。
+-v：打印版本信息并退出。
+docker-compose 命令默认使用的配置文件是当前目录中的 docker-compose.yml 文件，当然我们可以通过 -f 选项指定一个其它名称的配置文件，比如：
+docker-compose -f docker-compose-dev.yml up
+
