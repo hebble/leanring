@@ -384,6 +384,9 @@ public class RedisLearning {
 
      23.zset底层实现原理
 
+     24.redis中的key过期了，为什么内存没有释放?
+         因为过期删除策略，惰性删除和定时删除
+
      */
 
 
